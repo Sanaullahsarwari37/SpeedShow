@@ -20,7 +20,7 @@ export interface RateLimitOptions {
   /** Tokens refilled per second. */
   refillPerSec: number;
 }
-
+export const RATE_MULT = 1;
 export function rateLimit(
   key: string,
   opts: RateLimitOptions,
