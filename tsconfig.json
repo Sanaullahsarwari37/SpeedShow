@@ -17,5 +17,27 @@
     "paths": { "@/*": ["./*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "components/blocked-screen.tsx",
+    "components/faq.tsx",
+    "components/features.tsx",
+    "components/glow-card.tsx",
+    "components/live-chart.tsx",
+    "components/place-search.tsx",
+    "components/speed-gauge.tsx",
+    "components/speed-test.tsx",
+    "components/stat-tiles.tsx",
+    "components/ui/badge.tsx",
+    "components/ui/card.tsx",
+    "components/ui/skeleton.tsx",
+    "components/weather-card.tsx",
+    "components/weather-scene.tsx",
+    "hooks/use-history.ts",
+    "hooks/use-weather-location.ts",
+    "lib/faq.ts",
+    "lib/weather-codes.ts",
+    "lib/weather-normalize.ts"
+  ]
 }

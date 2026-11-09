@@ -1,5 +1,5 @@
 import { getClientIp } from "@/lib/ip";
-import { rateLimit, type RateLimitOptions } from "@/lib/rate-limit";
+import { rateLimit, tooManyRequests, type RateLimitOptions } from "@/lib/rate-limit";
 
 export const USER_AGENT = "SpeedShow/2.0 (TalkNest)";
 
@@ -40,11 +40,7 @@ export const jsonError = (error: string, status: number) => json({ error }, { st
 /** Per-IP rate limit. Returns a 429 response when exceeded, otherwise null. */
 export function limit(req: Request, bucket: string, opts: RateLimitOptions): Response | null {
   const rl = rateLimit(`${bucket}:${getClientIp(req) ?? "anon"}`, opts);
-  if (rl.ok) return null;
-  return Response.json(
-    { error: "Too many requests. Please wait a moment and try again." },
-    { status: 429, headers: { "Retry-After": String(rl.retryAfterSec), "Cache-Control": "no-store" } },
-  );
+  return rl.ok ? null : tooManyRequests(rl.retryAfterSec);
 }
 
 /** Small bounded in-memory cache with a time-to-live (per server instance). */

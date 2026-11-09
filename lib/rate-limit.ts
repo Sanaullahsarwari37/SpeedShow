@@ -44,3 +44,17 @@ function prune(now: number) {
     if (++i > MAX_KEYS / 2) break;
   }
 }
+
+/** Standard 429 response with Retry-After. */
+export function tooManyRequests(retryAfterSec: number): Response {
+  return Response.json(
+    { error: "Too many requests. Please wait a moment and try again." },
+    { status: 429, headers: { "Retry-After": String(retryAfterSec), "Cache-Control": "no-store" } },
+  );
+}
+
+/**
+ * @deprecated Kept only so leftover SpeedShow v1 routes (app/api/download|upload|ping)
+ * still compile if they were not deleted. Run `node scripts/cleanup-old-files.mjs`.
+ */
+export const RATE_MULT = 1;
