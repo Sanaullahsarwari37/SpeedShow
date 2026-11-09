@@ -76,17 +76,18 @@ const ms = (v: unknown): number | null => (typeof v === "number" && v > 0 ? Math
 
 /** The subset of the engine's results API we rely on (all optional for safety across versions). */
 interface EngineResults {
-  getSummary: () => Record<string, number | undefined>;
-  getUnloadedLatency?: () => number | undefined;
-  getUnloadedJitter?: () => number | undefined;
-  getDownLoadedLatency?: () => number | undefined;
-  getUpLoadedLatency?: () => number | undefined;
+  /** The library returns a typed summary object; we read the fields we need defensively. */
+  getSummary: () => object;
+  getUnloadedLatency?: () => number | null | undefined;
+  getUnloadedJitter?: () => number | null | undefined;
+  getDownLoadedLatency?: () => number | null | undefined;
+  getUpLoadedLatency?: () => number | null | undefined;
   getDownloadBandwidthPoints?: () => { bps?: number }[];
   getUploadBandwidthPoints?: () => { bps?: number }[];
 }
 
 function readMetrics(r: EngineResults): SpeedMetrics {
-  const sum = r.getSummary() ?? {};
+  const sum = (r.getSummary() ?? {}) as Record<string, unknown>;
   return {
     download: mbps(sum.download),
     upload: mbps(sum.upload),

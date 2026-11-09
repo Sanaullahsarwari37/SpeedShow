@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
+import type { CSSProperties } from "react";
 import { twMerge } from "tailwind-merge";
 
 /** Class-name helper (clsx + tailwind-merge). */
@@ -33,3 +34,7 @@ export async function copyText(text: string): Promise<boolean> {
     return false;
   }
 }
+
+/** Inline style that may also set CSS custom properties, e.g. `cssVars({ "--d": "1s", left: "10%" })`. */
+export type CSSVars = CSSProperties & { [key: `--${string}`]: string | number | undefined };
+export const cssVars = (style: CSSVars): CSSProperties => style;

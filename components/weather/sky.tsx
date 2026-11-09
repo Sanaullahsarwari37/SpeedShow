@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { useSvgId } from "@/hooks/use-ui";
+import { cssVars } from "@/lib/utils";
 import type { DayPart, WeatherKind } from "@/lib/weather";
 
 /**
@@ -250,8 +251,7 @@ export const Sky = React.memo(function Sky({ kind, part, sun, night, moon, cover
           {Array.from({ length: drops }, (_, i) => (
             <i
               key={i}
-              style={
-                {
+              style={cssVars({
                   left: `${rnd(i, 5) * 110 - 5}%`,
                   "--d": `${-rnd(i, 6) * 4}s`,
                   "--t":
@@ -266,8 +266,7 @@ export const Sky = React.memo(function Sky({ kind, part, sun, night, moon, cover
                     : kind === "drizzle"
                       ? { height: "9px", opacity: 0.55 }
                       : { height: `${12 + intensity * 12}px`, width: intensity > 0.7 ? "2px" : undefined, opacity: 0.6 + intensity * 0.35 }),
-                } as React.CSSProperties
-              }
+                })}
             />
           ))}
         </div>

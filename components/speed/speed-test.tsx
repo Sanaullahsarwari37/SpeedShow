@@ -22,7 +22,7 @@ import { rateConnection } from "@/lib/rating";
 import { preloadEngine, type Phase } from "@/lib/speedtest";
 import { METRICS, TIER_TONE } from "@/lib/theme";
 import type { GeoPlace, SpeedResult } from "@/lib/types";
-import { cn, copyText, joinParts } from "@/lib/utils";
+import { cn, copyText, cssVars, joinParts } from "@/lib/utils";
 
 /** Weather sits below the test: its code loads after the test is interactive. */
 const WeatherCard = React.memo(
@@ -160,7 +160,7 @@ export function SpeedTest() {
         </p>
       ) : null}
 
-      <section aria-label="Internet speed test" className="rise-in grid items-stretch gap-4 sm:gap-5 lg:grid-cols-12" style={{ "--d": "0.1s" } as React.CSSProperties}>
+      <section aria-label="Internet speed test" className="rise-in grid items-stretch gap-4 sm:gap-5 lg:grid-cols-12" style={cssVars({ "--d": "0.1s" })}>
         <Surface as="div" variant="console" className="flex flex-col justify-center p-4 sm:p-6 lg:order-2 lg:col-span-7">
           <div aria-hidden="true" className="pointer-events-none absolute -top-20 -left-16 size-64 rounded-full bg-blue-500/20 blur-3xl" />
           <div aria-hidden="true" className="pointer-events-none absolute -right-12 -bottom-20 size-64 rounded-full bg-violet-500/20 blur-3xl" />
