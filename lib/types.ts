@@ -13,15 +13,16 @@ export interface NetworkInfo {
   timezone: string | null;
   /** Which provider answered. */
   source: string;
-  /** VPN / proxy screening result. `blocked` shows the VPN page. */
-  risk: NetworkRisk;
+  /** VPN / proxy detection. Informational only: the test always runs. */
+  vpn: VpnInfo;
 }
 
 /** Network details before VPN screening. */
-export type RawNetwork = Omit<NetworkInfo, "risk">;
+export type RawNetwork = Omit<NetworkInfo, "vpn">;
 
-export interface NetworkRisk {
-  blocked: boolean;
+export interface VpnInfo {
+  detected: boolean;
+  /** e.g. "VPN", "Proxy", "Hosting / data-centre network". */
   reasons: string[];
 }
 

@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 /** Shared social card for Open Graph and Twitter (one design, one source). */
 export const ogSize = { width: 1200, height: 630 };
-export const ogAlt = "SpeedShow: free internet speed test, powered by TalkNest";
+
 
 export function renderOgImage() {
   return new ImageResponse(

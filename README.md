@@ -5,6 +5,15 @@ A fast, private internet speed test (Next.js 16, App Router, Tailwind CSS 4) in 
 **Measures:** download, upload, idle latency, jitter and **loaded latency** (bufferbloat), with a live trace.
 **Also shows:** public IP, ISP + ASN, location, a live local clock for any city, weather (now, 24 h, 7 days), UV, air quality, sun position and moon phase.
 
+## Upgrading from v1
+
+Copying the new files over an old checkout leaves old files behind (for example `app/api/download`), and the build fails on them. Remove them once, then commit:
+
+```bash
+node scripts/cleanup-old-files.mjs
+git add -A && git commit -m "Remove old SpeedShow v1 files"
+```
+
 ## Run
 
 ```bash
@@ -20,7 +29,8 @@ Node 20.9+. Set `NEXT_PUBLIC_SITE_URL=https://your-domain.com` in production (ca
 - Engine: the official `@cloudflare/speedtest` library (same as speed.cloudflare.com), loaded on idle so the first test starts instantly. `preconnect` warms the connection.
 - Order: latency → download → upload. Payloads grow until a request takes ~1 s, so slow lines finish quickly and gigabit lines still saturate.
 - Final bandwidth = 90th percentile of samples; latency = median. Loaded latency is measured during transfers.
-- Reliability: auto-start waits for the VPN check (max 2.5 s), a 20 s stall watchdog, clean abort, clear error messages, and the Cloudflare edge name (e.g. "Frankfurt (FRA)").
+- Works on any connection, including VPNs and proxies (they just see a short note that results measure the VPN server).
+- Reliability: starts immediately, a 20 s stall watchdog, clean abort, clear error messages, and the Cloudflare edge name (e.g. "Frankfurt (FRA)").
 - Result logging to Cloudflare is disabled.
 
 ## Weather and local time
@@ -48,7 +58,7 @@ components/
   ui/                button, surface (+ header), primitives (chip, icon tile, section heading, live dot, skeleton)
   speed/             speed-test (orchestrator), gauge, stat-tiles, live-chart
   weather/           weather-card, sky, instruments, panels (hourly, sun & moon, 7-day), place-search, use-sun
-  network-card, history-card, local-time, guide, header, footer, blocked-screen
+  network-card, history-card, local-time, guide, header, footer
 hooks/               use-speed-test, use-live (eased value + chart samples), use-now (shared tickers),
                      use-stored (localStorage state), use-queries, use-ui (svg ids, copy feedback)
 lib/                 theme (metric labels/colours/tones), svg (chart paths), speedtest engine,
@@ -65,4 +75,4 @@ Brand copy: `lib/site.ts`. Colours: tokens at the top of `app/globals.css`.
 
 ## Environment
 
-See `.env.example`: `NEXT_PUBLIC_SITE_URL`, optional `IPAPI_KEY`, `BLOCK_VPN=off` to disable the VPN page, optional `OPEN_METEO_API_KEY` for commercial use.
+See `.env.example`: `NEXT_PUBLIC_SITE_URL`, optional `IPAPI_KEY`, `VPN_CHECK=off` to skip VPN detection, optional `OPEN_METEO_API_KEY` for commercial use.

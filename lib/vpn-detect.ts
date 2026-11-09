@@ -1,11 +1,12 @@
 import { getJson, TtlCache } from "@/lib/http";
-import type { NetworkRisk, RawNetwork } from "@/lib/types";
+import type { RawNetwork, VpnInfo } from "@/lib/types";
 
 /**
- * VPN / proxy screening.
+ * VPN / proxy detection (informational: the speed test always runs, the
+ * page just tells the visitor that results reflect the VPN server).
  *  1. ipapi.is flags (is_vpn, is_proxy, is_tor, is_datacenter); optional IPAPI_KEY.
  *  2. Network-name heuristics on the ISP / organisation.
- * Lookups fail OPEN, crawlers are never blocked, BLOCK_VPN=off disables it.
+ * Lookups fail open (no notice). VPN_CHECK=off skips the lookup entirely.
  */
 
 const VPN_BRANDS =
@@ -17,7 +18,7 @@ const HOSTING =
 const CRAWLER_UA =
   /(googlebot|google-inspectiontool|adsbot-google|bingbot|bingpreview|duckduckbot|slurp|baiduspider|yandex(bot)?|applebot|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|lighthouse|chrome-lighthouse|pagespeed)/i;
 
-export const vpnCheckEnabled = () => (process.env.BLOCK_VPN ?? "").toLowerCase() !== "off";
+export const vpnCheckEnabled = () => (process.env.VPN_CHECK ?? "").toLowerCase() !== "off";
 export const isCrawlerUserAgent = (ua: string | null | undefined) => !!ua && CRAWLER_UA.test(ua);
 
 export function heuristicReasons(parts: (string | null | undefined)[]): string[] {
@@ -57,12 +58,12 @@ export function fetchFlags(ip: string): Promise<IpapiFlags | null> {
   });
 }
 
-export async function assessRisk(
+export async function detectVpn(
   info: Pick<RawNetwork, "ip" | "isp" | "org">,
   userAgent: string | null,
   prefetched?: Promise<IpapiFlags | null>,
-): Promise<NetworkRisk> {
-  if (!vpnCheckEnabled() || !info.ip || isCrawlerUserAgent(userAgent)) return { blocked: false, reasons: [] };
+): Promise<VpnInfo> {
+  if (!vpnCheckEnabled() || !info.ip || isCrawlerUserAgent(userAgent)) return { detected: false, reasons: [] };
 
   let reasons = verdicts.get(info.ip);
   if (!reasons) {
@@ -71,5 +72,5 @@ export async function assessRisk(
     if (!reasons.length && !isCrawlerFlag(flags)) reasons = heuristicReasons([info.isp, info.org]);
     verdicts.set(info.ip, reasons);
   }
-  return { blocked: reasons.length > 0, reasons };
+  return { detected: reasons.length > 0, reasons };
 }

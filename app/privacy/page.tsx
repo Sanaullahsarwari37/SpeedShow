@@ -24,7 +24,7 @@ const SECTIONS = [
   },
   {
     h: "Your IP address",
-    p: "To show your provider and approximate location, our server sends your IP address to ipwho.is (or ipapi.co as a fallback) and ipapi.is for VPN screening. We don't store or log it.",
+    p: "To show your provider and approximate location, our server sends your IP address to ipwho.is (or ipapi.co as a fallback) and ipapi.is to detect VPNs. We don't store or log it.",
   },
   {
     h: "Weather and place search",

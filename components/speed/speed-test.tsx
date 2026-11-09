@@ -2,9 +2,8 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
-import { Check, Play, RotateCcw, Share2, Square, X, Zap } from "lucide-react";
+import { Check, Play, RotateCcw, Share2, ShieldCheck, Square, X, Zap } from "lucide-react";
 
-import { BlockedScreen } from "@/components/blocked-screen";
 import { HistoryCard } from "@/components/history-card";
 import { NetworkCard } from "@/components/network-card";
 import { SpeedGauge } from "@/components/speed/gauge";
@@ -43,9 +42,6 @@ const isPlace = (x: unknown): x is GeoPlace | null => {
 };
 const isHistory = (x: unknown): x is SpeedResult[] =>
   Array.isArray(x) && x.every((r) => r && typeof r === "object" && typeof r.id === "string" && typeof r.at === "number");
-
-/** Max wait for the VPN check before auto-starting anyway. */
-const NETWORK_WAIT_MS = 2500;
 
 /* ----------------------------- pieces ----------------------------- */
 
@@ -104,27 +100,17 @@ export function SpeedTest() {
   const series = useThroughputSeries(phase, running, state.live);
   const live = running && (phase === "download" || phase === "upload");
 
-  // Auto-start like fast.com once the VPN check answered (or after a short wait).
-  const blocked = network.data?.risk.blocked === true;
-  const [waited, setWaited] = React.useState(false);
-  React.useEffect(() => {
-    const idle = "requestIdleCallback" in window ? window.requestIdleCallback(() => void preloadEngine()) : 0;
-    const t = setTimeout(() => setWaited(true), NETWORK_WAIT_MS);
-    return () => {
-      clearTimeout(t);
-      if (idle) window.cancelIdleCallback(idle);
-    };
-  }, []);
+  // Auto-start like fast.com, on any connection (VPN included), right after first paint.
   const autoStarted = React.useRef(false);
-  const ready = !blocked && (!network.isPending || waited);
   React.useEffect(() => {
-    if (!ready || autoStarted.current || document.visibilityState === "hidden") return;
+    void preloadEngine();
+    if (autoStarted.current || document.visibilityState === "hidden") return;
     const t = setTimeout(() => {
       autoStarted.current = true;
       void start();
     }, 250);
     return () => clearTimeout(t);
-  }, [ready, start]);
+  }, [start]);
 
   // Stable callbacks keep the memoised cards below from re-rendering during a test.
   const refetchNetwork = network.refetch;
@@ -132,10 +118,6 @@ export function SpeedTest() {
   const retryNetwork = React.useCallback(() => void refetchNetwork(), [refetchNetwork]);
   const retryWeather = React.useCallback(() => void (hasLocation ? refetchWeather() : refetchNetwork()), [hasLocation, refetchWeather, refetchNetwork]);
   const clearHistory = React.useCallback(() => setHistory([]), [setHistory]);
-
-  if (blocked && network.data) {
-    return <BlockedScreen risk={network.data.risk} isFetching={network.isFetching} onRecheck={retryNetwork} />;
-  }
 
   const rating = result ? rateConnection(result) : null;
   const placeLabel = place
@@ -168,6 +150,16 @@ export function SpeedTest() {
   return (
     <div className="space-y-5 sm:space-y-6">
       {/* ───────────── Speed test ───────────── */}
+      {network.data?.vpn.detected ? (
+        <p role="status" className="glass-soft flex items-start gap-3 rounded-[var(--radius-tile)] px-4 py-3 text-sm text-muted-foreground sm:items-center">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber-500 sm:mt-0" aria-hidden="true" />
+          <span>
+            <span className="font-medium text-foreground">VPN or proxy detected.</span> The test works normally, but it measures your connection through
+            the VPN server, which can be slower than your own line.
+          </span>
+        </p>
+      ) : null}
+
       <section aria-label="Internet speed test" className="rise-in grid items-stretch gap-4 sm:gap-5 lg:grid-cols-12" style={{ "--d": "0.1s" } as React.CSSProperties}>
         <Surface as="div" variant="console" className="flex flex-col justify-center p-4 sm:p-6 lg:order-2 lg:col-span-7">
           <div aria-hidden="true" className="pointer-events-none absolute -top-20 -left-16 size-64 rounded-full bg-blue-500/20 blur-3xl" />
