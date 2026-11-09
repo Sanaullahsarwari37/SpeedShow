@@ -6,30 +6,35 @@ function resolveSiteUrl(): string {
   return "http://localhost:3000";
 }
 
+/** Single source of truth for brand, SEO copy and URLs. */
 export const siteConfig = {
   name: "SpeedShow",
   brand: "TalkNest",
-  tagline: "Premium internet speed test — accurate, private, beautiful",
-  title: "SpeedShow — Free Premium Internet Speed Test, IP, ISP & Weather | Powered by TalkNest",
+  /** ~60 characters: fits Google's title width. */
+  title: "Internet Speed Test: Download, Upload & Ping | SpeedShow",
+  /** ~155 characters: fits Google's snippet width. */
   description:
-    "SpeedShow is a free, ad-free, premium internet speed test. Measure real download, upload and latency on Cloudflare’s edge, see your IP, ISP, location and local weather — all in one elegant dashboard. Powered by TalkNest.",
+    "Free, ad-free internet speed test. Check download, upload, ping and jitter in seconds on Cloudflare's network, plus your IP, ISP, local time and weather.",
   keywords: [
     "internet speed test",
     "speed test",
-    "check internet speed",
-    "download speed",
-    "upload speed",
-    "latency test",
-    "ping test",
-    "Cloudflare speed test",
-    "what is my IP",
-    "my IP address",
-    "ISP lookup",
-    "bandwidth test",
     "wifi speed test",
-    "accurate speed test",
+    "check internet speed",
+    "download speed test",
+    "upload speed test",
+    "ping test",
+    "latency test",
+    "jitter test",
+    "bufferbloat test",
+    "what is my IP",
+    "ISP lookup",
+    "local time",
+    "weather",
     "SpeedShow",
-    "TalkNest",
   ],
+  locale: "en_US",
   url: resolveSiteUrl(),
+  themeColor: { light: "#eef1ff", dark: "#04060f" },
 } as const;
+
+export const absoluteUrl = (path = "/") => `${siteConfig.url}${path === "/" ? "" : path}`;

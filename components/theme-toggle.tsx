@@ -1,25 +1,17 @@
 "use client";
 
-import * as React from "react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
 
+/** Both icons render on the server; CSS shows the right one, so there is no flash or hydration mismatch. */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
-
-  const isDark = resolvedTheme !== "light";
   return (
-    <Button
-      variant="glass"
-      size="icon"
-      aria-label={mounted ? (isDark ? "Switch to light theme" : "Switch to dark theme") : "Toggle theme"}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-    >
-      {mounted && !isDark ? <Moon /> : <Sun />}
+    <Button size="icon" aria-label="Switch colour theme" onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}>
+      <Sun className="hidden dark:block" />
+      <Moon className="dark:hidden" />
     </Button>
   );
 }

@@ -1,312 +1,197 @@
 /**
- * SpeedShow engine — official @cloudflare/speedtest
- * (same engine as speed.cloudflare.com).
+ * SpeedShow measurement engine, built on the official @cloudflare/speedtest
+ * library (the engine behind speed.cloudflare.com).
  *
- * Fast path: download → upload immediately.
- * Short ramp for quick results while maintaining useful measurements.
+ * Order (like fast.com): idle latency → download → upload. Each direction
+ * ramps payload sizes and stops growing once a request lasts ~1 s, so slow
+ * lines finish quickly and gigabit lines still get saturated. Final bandwidth
+ * is the 90th percentile of samples; latency is the median. Loaded latency
+ * (ping while the line is busy) exposes bufferbloat.
  */
 
-export type Phase = "idle" | "download" | "upload" | "done" | "error";
+import type { SpeedMetrics } from "@/lib/types";
 
-export const CLOUDFLARE_HOST = "https://speed.cloudflare.com";
+export type Phase = "idle" | "latency" | "download" | "upload" | "done" | "error";
 
-export interface TestUpdate {
+export interface TestUpdate extends SpeedMetrics {
   phase: Phase;
-  mbps: number;
-  fraction: number;
-  download?: number;
-  upload?: number;
-  latency?: number;
-  jitter?: number;
-  server?: string;
+  /** Latest throughput sample (Mbps) for the active direction. */
+  live: number;
 }
 
-export interface RunOptions {
-  signal: AbortSignal;
-  onUpdate: (u: TestUpdate) => void;
-  host?: string;
-  skipLatency?: boolean;
-}
-
-export interface RunResult {
-  download: number;
-  upload: number;
+export interface RunResult extends SpeedMetrics {
   server: string;
-  latency: number | null;
-  jitter: number | null;
 }
 
 export const UNREACHABLE_MESSAGE =
-  "Couldn't reach Cloudflare's speed servers. Check your connection, turn off any VPN or ad-blocker, and try again.";
+  "Couldn't reach Cloudflare's test servers. Check your connection, pause any ad-blocker or firewall that blocks speed.cloudflare.com, then test again.";
+const STALLED_MESSAGE = "The test stalled because no data arrived for 20 seconds. Your connection may have dropped. Test again.";
 
-export const isAbort = (e: unknown) =>
-  e instanceof DOMException && e.name === "AbortError";
+const STALL_MS = 20_000;
+const TRACE_URL = "https://speed.cloudflare.com/cdn-cgi/trace";
 
-const abortError = () => new DOMException("Aborted", "AbortError");
-
-const bpsToMbps = (
-  bps: number | undefined | null,
-): number => (bps != null && bps > 0 ? bps / 1e6 : 0);
-
-/** Quick but solid measurement ramp. */
-const FAST_MEASUREMENTS = [
-  // Download first
+const MEASUREMENTS = [
+  { type: "latency" as const, numPackets: 1 }, // opens the connection (TLS handshake) so it doesn't skew results
+  { type: "latency" as const, numPackets: 16 },
   { type: "download" as const, bytes: 1e5, count: 1, bypassMinDuration: true },
-  { type: "download" as const, bytes: 1e6, count: 3 },
-  { type: "download" as const, bytes: 1e7, count: 3 },
-  { type: "download" as const, bytes: 2.5e7, count: 2 },
+  { type: "download" as const, bytes: 1e5, count: 6 },
+  { type: "download" as const, bytes: 1e6, count: 5 },
+  { type: "download" as const, bytes: 1e7, count: 4 },
+  { type: "download" as const, bytes: 2.5e7, count: 3 },
   { type: "download" as const, bytes: 1e8, count: 2 },
-
-  // Upload second
-  { type: "upload" as const, bytes: 1e5, count: 3 },
-  { type: "upload" as const, bytes: 1e6, count: 3 },
-  { type: "upload" as const, bytes: 1e7, count: 2 },
+  { type: "upload" as const, bytes: 1e5, count: 5 },
+  { type: "upload" as const, bytes: 1e6, count: 4 },
+  { type: "upload" as const, bytes: 1e7, count: 3 },
   { type: "upload" as const, bytes: 2.5e7, count: 2 },
-
-  // Idle latency and jitter after transfers
-  { type: "latency" as const, numPackets: 8 },
+  { type: "upload" as const, bytes: 5e7, count: 2 },
 ];
 
-type Summary = {
-  download?: number | null;
-  upload?: number | null;
-  latency?: number | null;
-  jitter?: number | null;
+/** Cloudflare data-centre codes → city, for the most common edges. */
+const COLO: Record<string, string> = {
+  AMS: "Amsterdam", ARN: "Stockholm", ATL: "Atlanta", BKK: "Bangkok", BOM: "Mumbai", CDG: "Paris", CGK: "Jakarta",
+  DEL: "New Delhi", DFW: "Dallas", DOH: "Doha", DXB: "Dubai", EWR: "Newark", FRA: "Frankfurt", GRU: "São Paulo",
+  HKG: "Hong Kong", IAD: "Ashburn", IST: "Istanbul", JNB: "Johannesburg", KHI: "Karachi", KUL: "Kuala Lumpur",
+  LAX: "Los Angeles", LHR: "London", ISB: "Islamabad", LHE: "Lahore", MAD: "Madrid", MAN: "Manchester", MIA: "Miami",
+  MRS: "Marseille", MXP: "Milan", NRT: "Tokyo", ORD: "Chicago", RUH: "Riyadh", SEA: "Seattle", SIN: "Singapore",
+  SJC: "San Jose", SYD: "Sydney", TAS: "Tashkent", THR: "Tehran", WAW: "Warsaw", YYZ: "Toronto", ZRH: "Zurich", VIE: "Vienna",
 };
 
-/**
- * Cloudflare can return null or undefined for unloaded latency/jitter
- * when the corresponding measurements are unavailable.
- */
-type EngineResults = {
-  getSummary: () => Summary;
-  getUnloadedLatency?: () => number | null | undefined;
-  getUnloadedJitter?: () => number | null | undefined;
-};
+/** Which Cloudflare edge serves this visitor, e.g. "Frankfurt (FRA)". Never throws. */
+export async function fetchServerName(signal?: AbortSignal): Promise<string> {
+  try {
+    const res = await fetch(TRACE_URL, { signal, cache: "no-store" });
+    const colo = /^colo=([A-Z]{3})$/m.exec(await res.text())?.[1];
+    if (colo) return COLO[colo] ? `${COLO[colo]} (${colo})` : `Cloudflare ${colo}`;
+  } catch {
+    /* blocked by CORS or network: fall through */
+  }
+  return "Cloudflare edge";
+}
 
-function readLatency(
-  results: EngineResults,
-): { latency: number | null; jitter: number | null } {
-  const summary = results.getSummary();
+export const isAbort = (e: unknown) => e instanceof DOMException && e.name === "AbortError";
+const abortError = () => new DOMException("Aborted", "AbortError");
 
-  const latencyValue =
-    results.getUnloadedLatency?.() ?? summary.latency;
+const mbps = (bps: unknown): number | null => (typeof bps === "number" && bps > 0 ? bps / 1e6 : null);
+const ms = (v: unknown): number | null => (typeof v === "number" && v > 0 ? Math.round(v * 10) / 10 : null);
 
-  const jitterValue =
-    results.getUnloadedJitter?.() ?? summary.jitter;
+/** The subset of the engine's results API we rely on (all optional for safety across versions). */
+interface EngineResults {
+  getSummary: () => Record<string, number | undefined>;
+  getUnloadedLatency?: () => number | undefined;
+  getUnloadedJitter?: () => number | undefined;
+  getDownLoadedLatency?: () => number | undefined;
+  getUpLoadedLatency?: () => number | undefined;
+  getDownloadBandwidthPoints?: () => { bps?: number }[];
+  getUploadBandwidthPoints?: () => { bps?: number }[];
+}
 
+function readMetrics(r: EngineResults): SpeedMetrics {
+  const sum = r.getSummary() ?? {};
   return {
-    latency:
-      latencyValue != null && latencyValue > 0
-        ? Math.round(latencyValue * 10) / 10
-        : null,
-
-    jitter:
-      jitterValue != null && jitterValue > 0
-        ? Math.round(jitterValue * 10) / 10
-        : null,
+    download: mbps(sum.download),
+    upload: mbps(sum.upload),
+    latency: ms(r.getUnloadedLatency?.() ?? sum.latency),
+    jitter: ms(r.getUnloadedJitter?.() ?? sum.jitter),
+    loadedDown: ms(r.getDownLoadedLatency?.() ?? sum.downLoadedLatency),
+    loadedUp: ms(r.getUpLoadedLatency?.() ?? sum.upLoadedLatency),
   };
 }
 
-export async function runSpeedTest(
-  opts: RunOptions,
-): Promise<RunResult> {
-  const { signal, onUpdate } = opts;
+function lastSample(points: { bps?: number }[] | undefined): number | null {
+  return points?.length ? mbps(points[points.length - 1]?.bps) : null;
+}
 
-  if (signal.aborted) {
-    throw abortError();
-  }
+/** Load the engine ahead of time (call when the browser is idle). */
+export const preloadEngine = () => import("@cloudflare/speedtest").catch(() => undefined);
 
+export async function runSpeedTest({
+  signal,
+  onUpdate,
+}: {
+  signal: AbortSignal;
+  onUpdate: (u: TestUpdate) => void;
+}): Promise<RunResult> {
+  if (signal.aborted) throw abortError();
+  const serverPromise = fetchServerName(signal);
   const { default: SpeedTest } = await import("@cloudflare/speedtest");
-
-  // The signal may have been aborted while the module was loading.
-  if (signal.aborted) {
-    throw abortError();
-  }
+  if (signal.aborted) throw abortError();
 
   return new Promise<RunResult>((resolve, reject) => {
-    let finished = false;
-    let phase: Phase = "download";
-    let downloadMbps = 0;
-    let uploadMbps = 0;
-    let latencyMs: number | null = null;
-    let jitterMs: number | null = null;
-
-    const server = "Cloudflare Edge";
-
-    const cleanup = () => {
-      signal.removeEventListener("abort", onAbort);
-
-      try {
-        engine.pause();
-      } catch {
-        // Ignore cleanup errors.
-      }
-    };
-
-    const done = (fn: () => void) => {
-      if (finished) return;
-
-      finished = true;
-      cleanup();
-      fn();
-    };
-
-    const fail = (err: unknown) =>
-      done(() => {
-        if (isAbort(err) || signal.aborted) {
-          reject(abortError());
-        } else {
-          reject(
-            err instanceof Error ? err : new Error(String(err)),
-          );
-        }
-      });
-
-    const succeed = (result: RunResult) =>
-      done(() => resolve(result));
+    let settled = false;
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
+    let phase: Phase = "latency";
+    let live = 0;
 
     const engine = new SpeedTest({
       autoStart: false,
-      logAimApiUrl: null,
+      measurements: MEASUREMENTS,
       logMeasurementApiUrl: null,
-      measurements: FAST_MEASUREMENTS,
-      measureDownloadLoadedLatency: false,
-      measureUploadLoadedLatency: false,
-      bandwidthFinishRequestDuration: 700,
+      logAimApiUrl: null,
+      measureDownloadLoadedLatency: true,
+      measureUploadLoadedLatency: true,
+      bandwidthFinishRequestDuration: 1000,
+      bandwidthMinRequestDuration: 10,
       bandwidthPercentile: 0.9,
       latencyPercentile: 0.5,
-      bandwidthMinRequestDuration: 8,
     });
 
-    const onAbort = () => {
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      signal.removeEventListener("abort", onAbort);
       try {
         engine.pause();
       } catch {
-        // Ignore errors while stopping an aborted test.
+        /* already stopped */
       }
-
-      fail(abortError());
+      fn();
+    };
+    const fail = (err: unknown) =>
+      finish(() => reject(signal.aborted ? abortError() : err instanceof Error ? err : new Error(String(err || UNREACHABLE_MESSAGE))));
+    const onAbort = () => fail(abortError());
+    const armWatchdog = () => {
+      clearTimeout(watchdog);
+      watchdog = setTimeout(() => fail(new Error(STALLED_MESSAGE)), STALL_MS);
     };
 
     signal.addEventListener("abort", onAbort, { once: true });
 
-    const emit = (
-      currentPhase: Phase,
-      mbps: number,
-      fraction: number,
-    ) => {
-      onUpdate({
-        phase: currentPhase,
-        mbps,
-        fraction,
-        download: downloadMbps || undefined,
-        upload: uploadMbps || undefined,
-        latency: latencyMs ?? undefined,
-        jitter: jitterMs ?? undefined,
-        server,
-      });
-    };
-
     engine.onResultsChange = ({ type }: { type?: string }) => {
-      if (finished || signal.aborted) return;
-
+      if (settled) return;
+      armWatchdog();
       try {
-        const summary = engine.results.getSummary() as Summary;
-
-        const dl = bpsToMbps(summary.download);
-        const ul = bpsToMbps(summary.upload);
-
-        if (dl > 0) downloadMbps = dl;
-        if (ul > 0) uploadMbps = ul;
-
-        const { latency, jitter } = readLatency(
-          engine.results as EngineResults,
-        );
-
-        if (latency != null) latencyMs = latency;
-        if (jitter != null) jitterMs = jitter;
-
-        const currentType = (type || "").toLowerCase();
-
-        if (
-          currentType.includes("upload") ||
-          (ul > 0 && !currentType.includes("download"))
-        ) {
-          phase = "upload";
-        } else {
-          phase = "download";
-        }
-
-        const live =
-          phase === "upload"
-            ? uploadMbps || ul
-            : downloadMbps || dl;
-
-        let fraction = 0.08;
-
-        if (downloadMbps > 0) {
-          fraction = 0.35 + Math.min(0.2, downloadMbps / 500);
-        }
-
-        if (uploadMbps > 0) {
-          fraction = 0.65 + Math.min(0.25, uploadMbps / 200);
-        }
-
-        emit(phase, live, Math.min(0.95, fraction));
+        const results = engine.results as EngineResults;
+        if (type === "download" || type === "upload") phase = type;
+        const sample =
+          phase === "download"
+            ? lastSample(results.getDownloadBandwidthPoints?.())
+            : phase === "upload"
+              ? lastSample(results.getUploadBandwidthPoints?.())
+              : null;
+        const metrics = readMetrics(results);
+        live = sample ?? (phase === "upload" ? metrics.upload : metrics.download) ?? live;
+        onUpdate({ ...metrics, phase, live });
       } catch {
-        // Intermediate results may be incomplete.
+        /* intermediate results can be incomplete */
       }
     };
 
     engine.onFinish = (results: EngineResults) => {
-      if (finished) return;
-
-      try {
-        const summary = results.getSummary();
-
-        const dl = bpsToMbps(summary.download);
-        const ul = bpsToMbps(summary.upload);
-
-        const { latency, jitter } = readLatency(results);
-
-        if (dl <= 0 && ul <= 0) {
-          fail(new Error(UNREACHABLE_MESSAGE));
-          return;
-        }
-
-        downloadMbps = dl;
-        uploadMbps = ul;
-        latencyMs = latency;
-        jitterMs = jitter;
-
-        emit("done", dl, 1);
-
-        succeed({
-          download: dl,
-          upload: ul,
-          server,
-          latency,
-          jitter,
-        });
-      } catch (error) {
-        fail(error);
-      }
+      const metrics = readMetrics(results);
+      if (!metrics.download && !metrics.upload) return fail(new Error(UNREACHABLE_MESSAGE));
+      const fallback = new Promise<string>((r) => setTimeout(() => r("Cloudflare edge"), 1500));
+      void Promise.race([serverPromise, fallback]).then((server) => finish(() => resolve({ ...metrics, server })));
     };
 
-    engine.onError = (error: string) => {
-      fail(new Error(error || UNREACHABLE_MESSAGE));
-    };
+    engine.onError = (e: unknown) => fail(new Error(typeof e === "string" && e ? `${UNREACHABLE_MESSAGE} (${e})` : UNREACHABLE_MESSAGE));
 
-    emit("download", 0, 0);
-
+    onUpdate({ download: null, upload: null, latency: null, jitter: null, loadedDown: null, loadedUp: null, phase, live: 0 });
+    armWatchdog();
     try {
       engine.play();
-    } catch (error) {
-      fail(error);
+    } catch (e) {
+      fail(e);
     }
   });
 }
-
-export const toMbps = (bytes: number, ms: number) =>
-  ms > 0 ? (bytes * 8) / 1e6 / (ms / 1000) : 0;

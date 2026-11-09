@@ -1,16 +1,11 @@
+import { getJson, TtlCache } from "@/lib/http";
 import type { NetworkRisk, RawNetwork } from "@/lib/types";
 
 /**
  * VPN / proxy screening.
- *
- * Signals (any one is enough to flag):
- *  1. ipapi.is flags (is_vpn, is_proxy, is_tor, is_datacenter), free, optional IPAPI_KEY for higher limits.
- *  2. Network-name heuristics on the ISP / organisation (known VPN brands and hosting providers).
- *
- * No detector is perfect: brand-new VPN servers can slip through and a few corporate
- * networks look like hosting. Failures fail OPEN (a lookup outage never locks real users out).
- * Search-engine crawlers are never blocked so SEO is unaffected.
- * Set BLOCK_VPN=off to disable the check entirely.
+ *  1. ipapi.is flags (is_vpn, is_proxy, is_tor, is_datacenter); optional IPAPI_KEY.
+ *  2. Network-name heuristics on the ISP / organisation.
+ * Lookups fail OPEN, crawlers are never blocked, BLOCK_VPN=off disables it.
  */
 
 const VPN_BRANDS =
@@ -22,20 +17,17 @@ const HOSTING =
 const CRAWLER_UA =
   /(googlebot|google-inspectiontool|adsbot-google|bingbot|bingpreview|duckduckbot|slurp|baiduspider|yandex(bot)?|applebot|facebookexternalhit|twitterbot|linkedinbot|slackbot|whatsapp|telegrambot|discordbot|lighthouse|chrome-lighthouse|pagespeed)/i;
 
-export function isCrawlerUserAgent(ua: string | null | undefined): boolean {
-  return !!ua && CRAWLER_UA.test(ua);
-}
+export const vpnCheckEnabled = () => (process.env.BLOCK_VPN ?? "").toLowerCase() !== "off";
+export const isCrawlerUserAgent = (ua: string | null | undefined) => !!ua && CRAWLER_UA.test(ua);
 
-/** Pure name-based check (exported for tests). */
 export function heuristicReasons(parts: (string | null | undefined)[]): string[] {
   const text = parts.filter(Boolean).join(" ");
-  if (!text) return [];
   if (VPN_BRANDS.test(text)) return ["VPN / proxy network"];
   if (HOSTING.test(text)) return ["Hosting / data-centre network"];
   return [];
 }
 
-interface IpapiIs {
+export interface IpapiFlags {
   is_vpn?: boolean;
   is_proxy?: boolean;
   is_tor?: boolean;
@@ -43,10 +35,10 @@ interface IpapiIs {
   is_crawler?: boolean | string;
 }
 
-/** Pure flag mapping (exported for tests). */
-export function flagReasons(d: IpapiIs | null | undefined): string[] {
-  if (!d || typeof d !== "object") return [];
-  if (d.is_crawler && d.is_crawler !== "false") return [];
+const isCrawlerFlag = (d: IpapiFlags | null) => !!d?.is_crawler && d.is_crawler !== "false";
+
+export function flagReasons(d: IpapiFlags | null | undefined): string[] {
+  if (!d || typeof d !== "object" || isCrawlerFlag(d)) return [];
   const out: string[] = [];
   if (d.is_tor) out.push("Tor exit node");
   if (d.is_vpn) out.push("VPN");
@@ -55,47 +47,29 @@ export function flagReasons(d: IpapiIs | null | undefined): string[] {
   return out;
 }
 
-const CACHE_TTL = 10 * 60 * 1000;
-const CACHE_MAX = 500;
-const cache = new Map<string, { at: number; reasons: string[] }>();
+const verdicts = new TtlCache<string[]>(10 * 60_000);
 
-function remember(ip: string, reasons: string[]) {
-  if (cache.size >= CACHE_MAX) {
-    const oldest = cache.keys().next().value;
-    if (oldest !== undefined) cache.delete(oldest);
-  }
-  cache.set(ip, { at: Date.now(), reasons });
-}
-
-async function fetchFlags(ip: string, fetchImpl: typeof fetch): Promise<IpapiIs | null> {
+/** ipapi.is flags for an IP (call early so it runs in parallel with the ISP lookup). */
+export function fetchFlags(ip: string): Promise<IpapiFlags | null> {
   const key = process.env.IPAPI_KEY;
-  const url = `https://api.ipapi.is/?q=${encodeURIComponent(ip)}${key ? `&key=${encodeURIComponent(key)}` : ""}`;
-  try {
-    const res = await fetchImpl(url, { signal: AbortSignal.timeout(2500), headers: { Accept: "application/json" } });
-    if (!res.ok) return null;
-    return (await res.json()) as IpapiIs;
-  } catch {
-    return null;
-  }
+  return getJson<IpapiFlags>(`https://api.ipapi.is/?q=${encodeURIComponent(ip)}${key ? `&key=${encodeURIComponent(key)}` : ""}`, {
+    timeoutMs: 2500,
+  });
 }
 
 export async function assessRisk(
-  info: Pick<RawNetwork, "ip" | "isp" | "org" | "asn">,
+  info: Pick<RawNetwork, "ip" | "isp" | "org">,
   userAgent: string | null,
-  fetchImpl: typeof fetch = fetch,
+  prefetched?: Promise<IpapiFlags | null>,
 ): Promise<NetworkRisk> {
-  const open: NetworkRisk = { blocked: false, reasons: [] };
-  if ((process.env.BLOCK_VPN ?? "").toLowerCase() === "off") return open;
-  if (!info.ip || isCrawlerUserAgent(userAgent)) return open;
+  if (!vpnCheckEnabled() || !info.ip || isCrawlerUserAgent(userAgent)) return { blocked: false, reasons: [] };
 
-  const hit = cache.get(info.ip);
-  if (hit && Date.now() - hit.at < CACHE_TTL) return { blocked: hit.reasons.length > 0, reasons: hit.reasons };
-
-  const flags = await fetchFlags(info.ip, fetchImpl);
-  let reasons = flagReasons(flags);
-  if (reasons.length === 0 && !(flags?.is_crawler && flags.is_crawler !== "false")) {
-    reasons = heuristicReasons([info.isp, info.org]);
+  let reasons = verdicts.get(info.ip);
+  if (!reasons) {
+    const flags = await (prefetched ?? fetchFlags(info.ip));
+    reasons = flagReasons(flags);
+    if (!reasons.length && !isCrawlerFlag(flags)) reasons = heuristicReasons([info.isp, info.org]);
+    verdicts.set(info.ip, reasons);
   }
-  remember(info.ip, reasons);
   return { blocked: reasons.length > 0, reasons };
 }

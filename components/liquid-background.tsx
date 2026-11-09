@@ -1,4 +1,4 @@
-/** Fixed premium backdrop — soft mesh, aurora, subtle grid. */
+/** Fixed backdrop: soft mesh gradient, aurora blobs (desktop only), fading grid and grain. */
 export function LiquidBackground() {
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -13,23 +13,15 @@ export function LiquidBackground() {
           ].join(","),
         }}
       />
-      <div className="blob-a absolute -top-48 left-[6%] h-[28rem] w-[56rem] -rotate-12 rounded-full bg-gradient-to-r from-sky-400/18 via-indigo-500/18 to-transparent blur-[110px] dark:from-sky-500/14 dark:via-indigo-600/22" />
-      <div className="blob-b absolute top-[40%] -right-48 size-[38rem] rounded-full bg-gradient-to-br from-indigo-500/16 to-fuchsia-500/8 blur-[130px] dark:from-indigo-600/22" />
-      <div className="blob-c absolute -bottom-56 left-[20%] size-[40rem] rounded-full bg-violet-500/12 blur-[140px] dark:bg-violet-700/16" />
+      <div className="blob-a absolute -top-48 left-[6%] hidden h-[28rem] w-[56rem] -rotate-12 rounded-full bg-gradient-to-r from-sky-400/18 via-indigo-500/18 to-transparent blur-[110px] will-change-transform md:block dark:from-sky-500/14 dark:via-indigo-600/22" />
+      <div className="blob-b absolute top-[40%] -right-48 hidden size-[38rem] rounded-full bg-gradient-to-br from-indigo-500/16 to-fuchsia-500/8 blur-[130px] will-change-transform md:block dark:from-indigo-600/22" />
       <div
         className="absolute inset-0 opacity-[0.28] dark:opacity-[0.14]"
         style={{
-          backgroundImage:
-            "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
+          backgroundImage: "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
           backgroundSize: "56px 56px",
           maskImage: "linear-gradient(to bottom, #000 0%, transparent 48%)",
           WebkitMaskImage: "linear-gradient(to bottom, #000 0%, transparent 48%)",
-        }}
-      />
-      <div
-        className="absolute inset-0 opacity-50 dark:opacity-70"
-        style={{
-          background: "radial-gradient(ellipse 85% 70% at 50% 35%, transparent 35%, var(--background) 100%)",
         }}
       />
       <div className="noise absolute inset-0 opacity-[0.035] mix-blend-overlay dark:opacity-[0.05]" />

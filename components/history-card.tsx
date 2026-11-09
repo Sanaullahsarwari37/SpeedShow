@@ -3,122 +3,117 @@
 import * as React from "react";
 import { History, Trash2 } from "lucide-react";
 
-import { GlowCard } from "@/components/glow-card";
 import { Button } from "@/components/ui/button";
-import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDateTime, formatSpeed } from "@/lib/format";
+import { Skeleton } from "@/components/ui/primitives";
+import { Surface, SurfaceHeader } from "@/components/ui/surface";
+import { useSvgId } from "@/hooks/use-ui";
+import { formatDateTime, formatMs, formatSpeed } from "@/lib/format";
+import { areaPath, smoothPath, toPoints } from "@/lib/svg";
+import { METRICS } from "@/lib/theme";
 import type { SpeedResult } from "@/lib/types";
 
-function linePath(values: number[], w: number, h: number, max: number) {
-  if (values.length === 0) return "";
-  const step = values.length > 1 ? w / (values.length - 1) : 0;
-  const pts = values.map((v, i) => [i * step, h - (v / max) * (h - 8) - 4] as const);
-  // Smooth the line with simple quadratic midpoints.
-  let d = `M${pts[0][0]},${pts[0][1]}`;
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1];
-    const [x1, y1] = pts[i];
-    const mx = (x0 + x1) / 2;
-    d += ` Q${x0 + (mx - x0)},${y0} ${mx},${(y0 + y1) / 2} T${x1},${y1}`;
-  }
-  return d;
-}
+const W = 400;
+const H = 96;
 
 function Sparkline({ items }: { items: SpeedResult[] }) {
-  const id = React.useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  const data = [...items].reverse().slice(-14);
-  const W = 400;
-  const H = 120;
-  const max = Math.max(1, ...data.map((d) => Math.max(d.download, d.upload)));
-  const down = data.map((d) => d.download);
-  const up = data.map((d) => d.upload);
-  const dPath = linePath(down, W, H, max);
-  const uPath = linePath(up, W, H, max);
-
+  const id = useSvgId("h");
+  const data = items.slice(0, 14).reverse();
+  const max = Math.max(1, ...data.map((d) => Math.max(d.download ?? 0, d.upload ?? 0)));
+  const box = { width: W, height: H, max, top: 6, bottom: 4 };
+  const down = toPoints(data.map((d) => d.download ?? 0), box);
+  const up = toPoints(data.map((d) => d.upload ?? 0), box);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-28 w-full overflow-visible" role="img" aria-label="Download and upload speed over your recent tests" preserveAspectRatio="none">
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-24 w-full overflow-visible" role="img" aria-label="Download and upload across your recent tests">
       <defs>
-        <linearGradient id={`d-${id}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor="#60a5fa" stopOpacity="0.35" />
-          <stop offset="1" stopColor="#60a5fa" stopOpacity="0" />
+        <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor={METRICS.download.from} stopOpacity="0.32" />
+          <stop offset="1" stopColor={METRICS.download.from} stopOpacity="0" />
         </linearGradient>
       </defs>
       {[0.25, 0.5, 0.75].map((f) => (
         <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} stroke="currentColor" strokeOpacity="0.08" strokeDasharray="4 6" />
       ))}
-      {dPath && data.length > 1 && <path d={`${dPath} L${W},${H} L0,${H} Z`} fill={`url(#d-${id})`} />}
-      {uPath && <path d={uPath} fill="none" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
-      {dPath && <path d={dPath} fill="none" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
+      <path d={areaPath(down, H)} fill={`url(#${id})`} />
+      <path d={smoothPath(up)} fill="none" stroke={METRICS.upload.from} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <path d={smoothPath(down)} fill="none" stroke={METRICS.download.from} strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
 
-export function HistoryCard({ items, ready, onClear }: { items: SpeedResult[]; ready: boolean; onClear: () => void }) {
+function Speed({ mbps }: { mbps: number | null }) {
+  const s = formatSpeed(mbps);
+  return mbps ? (
+    <>
+      {s.value} <span className="text-[0.7rem] text-muted-foreground">{s.unit}</span>
+    </>
+  ) : (
+    <>—</>
+  );
+}
+
+/** Recent tests, saved only in this browser. */
+export const HistoryCard = React.memo(function HistoryCard({ items, ready, onClear }: { items: SpeedResult[]; ready: boolean; onClear: () => void }) {
   return (
-    <GlowCard className="flex-1 rounded-xl">
-      <CardHeader className="flex-row items-start justify-between gap-3">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <History className="size-4 text-primary" aria-hidden="true" /> Test history
-          </CardTitle>
-          <CardDescription>Saved only in this browser. Never uploaded.</CardDescription>
-        </div>
-        {items.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={onClear} aria-label="Clear test history">
-            <Trash2 /> Clear
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent>
+    <Surface aria-labelledby="history-title" className="flex flex-col">
+      <SurfaceHeader
+        id="history-title"
+        icon={History}
+        title="Recent tests"
+        description="Saved only in this browser. Never uploaded."
+        divided
+        actions={
+          items.length ? (
+            <Button variant="ghost" size="sm" onClick={onClear}>
+              <Trash2 /> Clear
+            </Button>
+          ) : null
+        }
+      />
+      <div className="flex flex-1 flex-col px-5 py-5 sm:px-6">
         {!ready ? (
-          <div className="h-28" aria-hidden="true" />
-        ) : items.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">Run your first test and your results will appear here.</p>
+          <Skeleton className="h-40 w-full" />
+        ) : !items.length ? (
+          <p className="m-auto max-w-xs py-8 text-center text-sm text-muted-foreground">Your results appear here after each test, so you can compare rooms or times of day.</p>
         ) : (
           <>
-            <div className="mb-3 flex gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5"><i className="size-2 rounded-full bg-blue-400" /> Download</span>
-              <span className="flex items-center gap-1.5"><i className="size-2 rounded-full bg-indigo-400" /> Upload</span>
-            </div>
-            <Sparkline items={items} />
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full min-w-[28rem] text-sm">
-                <caption className="sr-only">Recent speed tests</caption>
+            {items.length > 1 ? (
+              <div className="mb-4">
+                <div className="mb-2 flex gap-4 text-xs text-muted-foreground">
+                  {(["download", "upload"] as const).map((k) => (
+                    <span key={k} className="flex items-center gap-1.5">
+                      <i className={`size-2 rounded-full ${METRICS[k].dot}`} /> {METRICS[k].label}
+                    </span>
+                  ))}
+                </div>
+                <Sparkline items={items} />
+              </div>
+            ) : null}
+            <div>
+              <table className="w-full text-sm">
+                <caption className="sr-only">Your recent speed tests</caption>
                 <thead>
                   <tr className="text-left text-xs text-muted-foreground">
                     <th scope="col" className="pb-2 font-medium">When</th>
                     <th scope="col" className="pb-2 font-medium">Download</th>
                     <th scope="col" className="pb-2 font-medium">Upload</th>
-                    <th scope="col" className="pb-2 font-medium">Latency</th>
-                    <th scope="col" className="pb-2 font-medium">Server</th>
+                    <th scope="col" className="pb-2 text-right font-medium">Ping</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/60">
-                  {items.slice(0, 6).map((r) => {
-                    const d = formatSpeed(r.download);
-                    const u = formatSpeed(r.upload);
-                    const lat =
-                      r.latency != null && r.latency > 0
-                        ? r.latency < 10
-                          ? r.latency.toFixed(1)
-                          : String(Math.round(r.latency))
-                        : "—";
-                    return (
-                      <tr key={r.id}>
-                        <td className="py-2 text-muted-foreground">{formatDateTime(r.at)}</td>
-                        <td className="py-2 font-mono tabular-nums">{d.value} <span className="text-xs text-muted-foreground">{d.unit}</span></td>
-                        <td className="py-2 font-mono tabular-nums">{u.value} <span className="text-xs text-muted-foreground">{u.unit}</span></td>
-                        <td className="py-2 font-mono tabular-nums text-muted-foreground">{lat}{lat !== "—" ? " ms" : ""}</td>
-                        <td className="py-2 text-muted-foreground">{r.server}</td>
-                      </tr>
-                    );
-                  })}
+                <tbody className="divide-y divide-border/70 font-mono tabular-nums">
+                  {items.slice(0, 5).map((r) => (
+                    <tr key={r.id}>
+                      <td className="py-2.5 pr-2 font-sans text-xs text-muted-foreground sm:text-sm">{formatDateTime(r.at)}</td>
+                      <td className="py-2.5"><Speed mbps={r.download} /></td>
+                      <td className="py-2.5"><Speed mbps={r.upload} /></td>
+                      <td className="py-2.5 text-right text-muted-foreground">{formatMs(r.latency)} ms</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </>
         )}
-      </CardContent>
-    </GlowCard>
+      </div>
+    </Surface>
   );
-}
+});

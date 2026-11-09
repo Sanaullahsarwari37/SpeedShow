@@ -4,15 +4,15 @@ import { siteConfig } from "@/lib/site";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: `${siteConfig.name} — Internet Speed Test by ${siteConfig.brand}`,
+    id: "/",
+    name: `${siteConfig.name}: Internet Speed Test`,
     short_name: siteConfig.name,
     description: siteConfig.description,
     start_url: "/",
     scope: "/",
     display: "standalone",
-    orientation: "portrait",
-    background_color: "#050716",
-    theme_color: "#050716",
+    background_color: siteConfig.themeColor.dark,
+    theme_color: siteConfig.themeColor.dark,
     categories: ["utilities", "productivity"],
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

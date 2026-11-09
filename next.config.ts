@@ -7,7 +7,7 @@ const upgradeHttps = !isDev && Boolean(process.env.VERCEL || process.env.FORCE_H
 
 // Content Security Policy (no-nonce variant from the official Next.js guide:
 // https://nextjs.org/docs/app/guides/content-security-policy).
-// connect-src allows Cloudflare's public speed-test edge used by the engine.
+// connect-src allows Cloudflare's public speed-test edge (test traffic + server name lookup).
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
@@ -41,7 +41,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // App icons rarely change: let browsers and CDNs keep them for a week.
+      { source: "/icons/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
+    ];
   },
 };
 

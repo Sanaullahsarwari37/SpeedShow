@@ -1,33 +1,18 @@
+import { getJson, TtlCache } from "@/lib/http";
 import { getClientIp, ipVersion, isPrivateIp } from "@/lib/ip";
 import type { RawNetwork } from "@/lib/types";
-
-const TIMEOUT_MS = 4500;
 
 type Json = Record<string, unknown>;
 
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
-async function getJson(url: string, fetchImpl: typeof fetch): Promise<Json | null> {
-  try {
-    const res = await fetchImpl(url, {
-      headers: { Accept: "application/json", "User-Agent": "SpeedShow/1.0 (TalkNest)" },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as unknown;
-    return data && typeof data === "object" ? (data as Json) : null;
-  } catch {
-    return null;
-  }
-}
+const cache = new TtlCache<RawNetwork>(10 * 60_000);
 
-/** Parse the ipwho.is response shape. */
+/** ipwho.is response → RawNetwork. */
 export function parseIpWho(d: Json): RawNetwork | null {
-  if (d.success === false) return null;
   const ip = str(d.ip);
-  if (!ip) return null;
+  if (d.success === false || !ip) return null;
   const conn = (d.connection ?? {}) as Json;
   const tz = (d.timezone ?? {}) as Json;
   const asn = num(conn.asn);
@@ -48,11 +33,10 @@ export function parseIpWho(d: Json): RawNetwork | null {
   };
 }
 
-/** Parse the ipapi.co response shape. */
+/** ipapi.co response → RawNetwork. */
 export function parseIpApi(d: Json): RawNetwork | null {
-  if (d.error) return null;
   const ip = str(d.ip);
-  if (!ip) return null;
+  if (d.error || !ip) return null;
   return {
     ip,
     version: ipVersion(ip),
@@ -79,18 +63,21 @@ function safeDecode(v: string | null): string | null {
   }
 }
 
-/** Geo information supplied by the hosting platform (Vercel) – no ISP available. */
+/** Geo data from the hosting platform (Vercel headers). No ISP available. */
 export function fromPlatformHeaders(req: Request, ip: string): RawNetwork {
   const h = req.headers;
-  const lat = Number(h.get("x-vercel-ip-latitude"));
-  const lon = Number(h.get("x-vercel-ip-longitude"));
+  const coord = (name: string) => {
+    const raw = h.get(name);
+    const n = Number(raw);
+    return raw && Number.isFinite(n) ? n : null;
+  };
   const code = str(h.get("x-vercel-ip-country"));
-  let country: string | null = null;
+  let country: string | null = code;
   if (code) {
     try {
       country = new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) ?? code;
     } catch {
-      country = code;
+      /* keep code */
     }
   }
   return {
@@ -103,37 +90,15 @@ export function fromPlatformHeaders(req: Request, ip: string): RawNetwork {
     region: str(h.get("x-vercel-ip-country-region")),
     country,
     countryCode: code,
-    latitude: h.get("x-vercel-ip-latitude") && Number.isFinite(lat) ? lat : null,
-    longitude: h.get("x-vercel-ip-longitude") && Number.isFinite(lon) ? lon : null,
+    latitude: coord("x-vercel-ip-latitude"),
+    longitude: coord("x-vercel-ip-longitude"),
     timezone: str(h.get("x-vercel-ip-timezone")),
     source: "platform",
   };
 }
 
-/**
- * Look up the caller's IP, ISP and location.
- * The IP is only ever taken from trusted platform headers and validated with
- * net.isIP before being placed in an upstream URL (no SSRF / injection surface).
- * Private addresses (local development) fall back to the server's public IP,
- * which is your own when running `npm run dev`.
- */
-export async function lookupNetwork(req: Request, fetchImpl: typeof fetch = fetch): Promise<RawNetwork | null> {
-  const ip = getClientIp(req);
-  const target = ip && !isPrivateIp(ip) ? ip : "";
-  const platform = ip && !isPrivateIp(ip) ? fromPlatformHeaders(req, ip) : null;
-
-  const who = await getJson(`https://ipwho.is/${target}`, fetchImpl);
-  const a = who ? parseIpWho(who) : null;
-  if (a) return mergePlatform(a, platform);
-
-  const api = await getJson(`https://ipapi.co/${target ? `${target}/` : ""}json/`, fetchImpl);
-  const b = api ? parseIpApi(api) : null;
-  if (b) return mergePlatform(b, platform);
-
-  return platform && (platform.city || platform.countryCode) ? platform : ip ? fromPlatformHeaders(req, ip) : null;
-}
-
-function mergePlatform(info: RawNetwork, platform: RawNetwork | null): RawNetwork {
+/** Fill gaps in a provider answer with platform geo headers. */
+function merge(info: RawNetwork, platform: RawNetwork | null): RawNetwork {
   if (!platform) return info;
   return {
     ...info,
@@ -145,4 +110,31 @@ function mergePlatform(info: RawNetwork, platform: RawNetwork | null): RawNetwor
     longitude: info.longitude ?? platform.longitude,
     timezone: info.timezone ?? platform.timezone,
   };
+}
+
+/**
+ * Look up the caller's IP, ISP and location.
+ * The IP only comes from trusted platform headers and is validated with net.isIP
+ * before it is placed in an upstream URL. Private addresses (local dev) fall back
+ * to the server's public IP. Results are cached per IP for 10 minutes.
+ */
+export async function lookupNetwork(req: Request): Promise<RawNetwork | null> {
+  const ip = getClientIp(req);
+  const publicIp = ip && !isPrivateIp(ip) ? ip : null;
+  const cacheKey = publicIp ?? "self";
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
+
+  const platform = publicIp ? fromPlatformHeaders(req, publicIp) : null;
+
+  const who = await getJson(`https://ipwho.is/${publicIp ?? ""}`, { timeoutMs: 3500 });
+  let info = who ? parseIpWho(who) : null;
+  if (!info) {
+    const api = await getJson(`https://ipapi.co/${publicIp ? `${publicIp}/` : ""}json/`, { timeoutMs: 3500 });
+    info = api ? parseIpApi(api) : null;
+  }
+
+  const result = info ? merge(info, platform) : platform;
+  if (result) cache.set(cacheKey, result);
+  return result;
 }

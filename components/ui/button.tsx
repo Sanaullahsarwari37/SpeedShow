@@ -1,42 +1,39 @@
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
-import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all duration-300 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground hover:brightness-110",
-        liquid: "btn-liquid text-white",
-        glass: "glass-soft text-foreground hover:bg-accent",
-        ghost: "text-muted-foreground hover:bg-accent hover:text-foreground",
-        outline: "border border-input bg-transparent hover:bg-accent",
-        destructive: "bg-destructive text-white hover:brightness-110",
-      },
-      size: {
-        default: "h-10 px-5",
-        sm: "h-8 px-3 text-xs",
-        lg: "h-14 px-9 text-base font-semibold",
-        icon: "size-10",
-        "icon-sm": "size-8",
-      },
-    },
-    defaultVariants: { variant: "default", size: "default" },
-  },
-);
+const VARIANTS = {
+  liquid: "btn-liquid",
+  glass: "glass-soft text-foreground hover:bg-accent",
+  ghost: "text-muted-foreground hover:bg-accent hover:text-foreground",
+  /** For dark consoles and sky backgrounds in both themes. */
+  onDark: "border border-white/20 bg-white/10 text-white hover:bg-white/20",
+} as const;
 
-function Button({
-  className,
-  variant,
-  size,
-  asChild = false,
-  ...props
-}: React.ComponentProps<"button"> & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : "button";
-  return <Comp data-slot="button" className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+const SIZES = {
+  sm: "h-8 gap-1.5 px-3 text-xs [&_svg]:size-3.5",
+  md: "h-10 gap-2 px-5 text-sm [&_svg]:size-4",
+  lg: "h-14 gap-2 px-9 text-base font-semibold [&_svg]:size-4",
+  icon: "size-10 [&_svg]:size-4",
+  "icon-sm": "size-8 [&_svg]:size-4",
+} as const;
+
+export interface ButtonStyle {
+  variant?: keyof typeof VARIANTS;
+  size?: keyof typeof SIZES;
+  className?: string;
 }
 
-export { Button, buttonVariants };
+/** Class string for anything that should look like a button (links included). */
+export function buttonClass({ variant = "glass", size = "md", className }: ButtonStyle = {}) {
+  return cn(
+    "inline-flex shrink-0 touch-manipulation items-center justify-center rounded-full font-medium whitespace-nowrap transition-[background-color,color,box-shadow,transform,background-position] duration-200 select-none active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 [&_svg]:shrink-0",
+    VARIANTS[variant],
+    SIZES[size],
+    className,
+  );
+}
+
+export function Button({ variant, size, className, type = "button", ...props }: React.ComponentProps<"button"> & ButtonStyle) {
+  return <button type={type} className={buttonClass({ variant, size, className })} {...props} />;
+}
