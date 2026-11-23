@@ -3,67 +3,7 @@ import { Sunrise, Sunset } from "lucide-react";
 import { MoonGlyph } from "@/components/weather/sky";
 import { SKY_LABEL } from "@/components/weather/styles";
 import type { SunState } from "@/components/weather/use-sun";
-import { WeatherIcon } from "@/components/weather/weather-icon";
-import { formatClock, formatMinutes, isoMinutes } from "@/lib/format";
-import { areaPath, smoothPath } from "@/lib/svg";
-import type { WeatherData } from "@/lib/types";
-import { cn } from "@/lib/utils";
-
-type Temp = (c: number) => string;
-
-/* ---------------- Next 24 hours ---------------- */
-
-const HW = 720;
-const HH = 120;
-
-export function HourlyCurve({ hours, t }: { hours: WeatherData["hourly"]; t: Temp }) {
-  const list = hours.slice(0, 24);
-  if (list.length < 3) return null;
-  const pad = 22;
-  const top = 30;
-  const bottom = 22;
-  const lo = Math.min(...list.map((h) => h.temp));
-  const span = Math.max(1, Math.max(...list.map((h) => h.temp)) - lo);
-  const pts = list.map((h, i) => [pad + (i * (HW - pad * 2)) / (list.length - 1), top + (1 - (h.temp - lo) / span) * (HH - top - bottom)] as const);
-
-  return (
-    <div className="tile p-4">
-      <h3 className={SKY_LABEL}>Next 24 hours</h3>
-      <div className="no-scrollbar -mx-1 overflow-x-auto px-1">
-        <svg viewBox={`0 0 ${HW} ${HH + 48}`} className="mt-2 h-44 w-full min-w-[40rem]" role="img" aria-label="Hourly temperature and rain chance for the next 24 hours">
-          <defs>
-            <linearGradient id="hc-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#fff" stopOpacity="0.32" />
-              <stop offset="1" stopColor="#fff" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path d={areaPath(pts, HH)} fill="url(#hc-fill)" />
-          <path d={smoothPath(pts)} fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-          {pts.map(([x, y], i) => {
-            if (i % 3) return null;
-            const h = list[i];
-            return (
-              <g key={h.time}>
-                <circle cx={x} cy={y} r="3.5" fill="#fff" />
-                <text x={x} y={y - 10} textAnchor="middle" fontSize="12" fontWeight="600" fill="#fff">
-                  {t(h.temp)}
-                </text>
-                <text x={x} y={HH + 16} textAnchor="middle" fontSize="11" fill="#fff" fillOpacity="0.75">
-                  {i === 0 ? "Now" : formatClock(isoMinutes(h.time), { minute: undefined })}
-                </text>
-                {h.precipProb >= 20 ? (
-                  <text x={x} y={HH + 36} textAnchor="middle" fontSize="10.5" fill="#bae6fd">
-                    💧{Math.round(h.precipProb)}%
-                  </text>
-                ) : null}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-    </div>
-  );
-}
+import { formatClock, formatMinutes } from "@/lib/format";
 
 /* ---------------- Sun & moon ---------------- */
 
@@ -118,41 +58,6 @@ export function SunMoon({ s }: { s: SunState }) {
           <span className="block text-xs text-white/70">{Math.round(s.moon.illumination * 100)}% illuminated</span>
         </p>
       </div>
-    </div>
-  );
-}
-
-/* ---------------- 7-day forecast ---------------- */
-
-function dayName(iso: string, i: number) {
-  if (i === 0) return "Today";
-  const [y, m, d] = iso.split("-").map(Number);
-  if (!y || !m || !d) return iso;
-  return new Intl.DateTimeFormat(undefined, { weekday: "short", timeZone: "UTC" }).format(new Date(Date.UTC(y, m - 1, d)));
-}
-
-export function Forecast({ days, t }: { days: WeatherData["daily"]; t: Temp }) {
-  const lo = Math.min(...days.map((d) => d.min));
-  const span = Math.max(1, Math.max(...days.map((d) => d.max)) - lo);
-  return (
-    <div className="tile p-4">
-      <h3 className={cn(SKY_LABEL, "mb-2")}>7-day forecast</h3>
-      <ul className="space-y-1.5">
-        {days.map((d, i) => (
-          <li key={d.date} className="grid grid-cols-[2.8rem_1.4rem_2.2rem_1fr_2.2rem] items-center gap-2 text-sm">
-            <span className="font-medium">{dayName(d.date, i)}</span>
-            <WeatherIcon code={d.code} className="size-5 text-white" />
-            <span className="text-right text-white/70 tabular-nums">{t(d.min)}</span>
-            <span className="relative h-1.5 rounded-full bg-white/20" aria-hidden="true">
-              <span
-                className="absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-200 via-white to-amber-200"
-                style={{ left: `${((d.min - lo) / span) * 100}%`, width: `${Math.max(8, ((d.max - d.min) / span) * 100)}%` }}
-              />
-            </span>
-            <span className="font-semibold tabular-nums">{t(d.max)}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

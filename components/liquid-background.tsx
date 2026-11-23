@@ -1,4 +1,4 @@
-/** Fixed backdrop: soft mesh gradient, aurora blobs (desktop only), fading grid and grain. */
+/** Fixed backdrop: deep near-black with a soft aurora (blobs on tablets/desktops only), fading grid and grain. */
 export function LiquidBackground() {
   return (
     <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -6,25 +6,25 @@ export function LiquidBackground() {
         className="absolute inset-0"
         style={{
           backgroundImage: [
-            "radial-gradient(65rem 40rem at 12% -8%, rgba(59,130,246,0.22), transparent 55%)",
-            "radial-gradient(55rem 36rem at 96% 6%, rgba(99,102,241,0.26), transparent 55%)",
-            "radial-gradient(48rem 32rem at 70% 105%, rgba(139,92,246,0.18), transparent 55%)",
-            "radial-gradient(40rem 26rem at 0% 90%, rgba(14,165,233,0.12), transparent 50%)",
+            "radial-gradient(60rem 34rem at 50% -12%, rgba(99,102,241,0.18), transparent 60%)",
+            "radial-gradient(40rem 26rem at 8% 4%, rgba(34,211,238,0.08), transparent 60%)",
+            "radial-gradient(44rem 28rem at 96% 18%, rgba(168,85,247,0.09), transparent 60%)",
+            "radial-gradient(50rem 30rem at 50% 110%, rgba(79,70,229,0.08), transparent 60%)",
           ].join(","),
         }}
       />
-      <div className="blob-a absolute -top-48 left-[6%] hidden h-[28rem] w-[56rem] -rotate-12 rounded-full bg-gradient-to-r from-sky-400/18 via-indigo-500/18 to-transparent blur-[110px] will-change-transform md:block dark:from-sky-500/14 dark:via-indigo-600/22" />
-      <div className="blob-b absolute top-[40%] -right-48 hidden size-[38rem] rounded-full bg-gradient-to-br from-indigo-500/16 to-fuchsia-500/8 blur-[130px] will-change-transform md:block dark:from-indigo-600/22" />
+      <div className="blob-a absolute -top-56 left-[12%] hidden h-[26rem] w-[50rem] -rotate-12 rounded-full bg-gradient-to-r from-cyan-500/10 via-indigo-600/14 to-transparent blur-[120px] will-change-transform md:block" />
+      <div className="blob-b absolute top-[42%] -right-56 hidden size-[34rem] rounded-full bg-gradient-to-br from-violet-600/12 to-fuchsia-600/5 blur-[140px] will-change-transform md:block" />
       <div
-        className="absolute inset-0 opacity-[0.28] dark:opacity-[0.14]"
+        className="absolute inset-0 opacity-[0.5]"
         style={{
-          backgroundImage: "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-          backgroundSize: "56px 56px",
-          maskImage: "linear-gradient(to bottom, #000 0%, transparent 48%)",
-          WebkitMaskImage: "linear-gradient(to bottom, #000 0%, transparent 48%)",
+          backgroundImage: "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
+          backgroundSize: "64px 64px",
+          maskImage: "radial-gradient(ellipse 80% 50% at 50% 0%, #000 0%, transparent 75%)",
+          WebkitMaskImage: "radial-gradient(ellipse 80% 50% at 50% 0%, #000 0%, transparent 75%)",
         }}
       />
-      <div className="noise absolute inset-0 opacity-[0.035] mix-blend-overlay dark:opacity-[0.05]" />
+      <div className="noise absolute inset-0 opacity-[0.04] mix-blend-overlay" />
     </div>
   );
 }

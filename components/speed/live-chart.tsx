@@ -37,7 +37,7 @@ export const LiveChart = React.memo(function LiveChart({ series, live }: { serie
     <div>
       <div className="mb-2.5 flex items-center justify-between text-[0.7rem] font-medium tracking-wide text-white/60">
         <span className="flex items-center gap-2">
-          <LiveDot on={live} className={live ? "text-sky-400" : "text-white/40"} />
+          <LiveDot on={live} className={live ? "text-cyan-400" : "text-white/40"} />
           Live throughput
         </span>
         <span className="flex items-center gap-3.5">

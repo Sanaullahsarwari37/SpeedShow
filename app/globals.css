@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* The site is dark-only; `dark:` utilities always apply. */
+@custom-variant dark (&:where(html, html *));
 
 @theme inline {
   --color-background: var(--background);
@@ -20,39 +21,22 @@
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ---------- Tokens ---------- */
+/* ---------- Tokens (one modern dark theme) ---------- */
 :root {
-  --background: #eef1ff;
-  --foreground: #0a0d2a;
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
-  --muted: rgba(15, 23, 42, 0.045);
-  --muted-foreground: #4f5783;
-  --accent: rgba(79, 70, 229, 0.09);
-  --border: rgba(15, 23, 42, 0.09);
-  --ring: #6366f1;
-  --glass-bg: linear-gradient(150deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.6) 100%);
-  --glass-border: rgba(255, 255, 255, 0.95);
-  --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.95) inset, 0 20px 50px -24px rgba(49, 46, 129, 0.28), 0 4px 14px -8px rgba(49, 46, 129, 0.12);
-  --glow: 0 0 80px -24px rgba(99, 102, 241, 0.35);
-  --blur: 24px;
-  color-scheme: light;
-}
-
-.dark {
-  --background: #04060f;
-  --foreground: #eef0ff;
-  --primary: #818cf8;
-  --primary-foreground: #070a24;
-  --muted: rgba(255, 255, 255, 0.05);
-  --muted-foreground: #949ecb;
-  --accent: rgba(129, 140, 248, 0.13);
-  --border: rgba(255, 255, 255, 0.085);
-  --ring: #818cf8;
-  --glass-bg: linear-gradient(150deg, rgba(129, 140, 248, 0.095) 0%, rgba(59, 130, 246, 0.035) 55%, rgba(255, 255, 255, 0.02) 100%);
-  --glass-border: rgba(165, 180, 252, 0.15);
-  --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 28px 70px -32px rgba(0, 0, 0, 0.85), 0 10px 28px -16px rgba(0, 0, 0, 0.5);
-  --glow: 0 0 100px -28px rgba(99, 102, 241, 0.45);
+  --background: #06070b;
+  --foreground: #eceef5;
+  --primary: #8b93ff;
+  --primary-foreground: #06070b;
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: #8d92a8;
+  --accent: rgba(139, 147, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.075);
+  --ring: #8b93ff;
+  --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.018) 100%);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 30px 60px -30px rgba(0, 0, 0, 0.9), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --glow: 0 0 0 transparent;
+  --blur: 20px;
   color-scheme: dark;
 }
 
@@ -106,21 +90,25 @@
   background: var(--muted);
   border: 1px solid var(--border);
 }
-/* Dark "console" that keeps its look in both themes (gauge, chart) */
+/* Deep instrument panel (gauge, chart) */
 @utility console {
-  color: #e8ebff;
-  background: linear-gradient(160deg, #141a63 0%, #0c1145 42%, #080b28 100%);
-  border: 1px solid rgba(129, 140, 248, 0.22);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 36px 90px -40px rgba(67, 56, 202, 0.6), 0 14px 40px -24px rgba(0, 0, 0, 0.5);
+  color: #eceef5;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(99, 102, 241, 0.1), transparent 60%),
+    linear-gradient(180deg, #0e1018 0%, #090a10 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 40px 80px -40px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
 /* Translucent tile on a sky / console background */
 @utility tile {
   border-radius: var(--radius-tile);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 @utility text-gradient {
-  background: linear-gradient(105deg, #38bdf8 0%, #6366f1 45%, #a78bfa 78%, #c084fc 100%);
+  background: linear-gradient(100deg, #67e8f9 0%, #818cf8 45%, #c084fc 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -128,7 +116,7 @@
 @utility btn-liquid {
   position: relative;
   color: #fff;
-  background: linear-gradient(125deg, #2563eb 0%, #4f46e5 42%, #7c3aed 78%, #9333ea 100%);
+  background: linear-gradient(120deg, #0891b2 0%, #4f46e5 45%, #7c3aed 80%, #a21caf 100%);
   background-size: 200% 200%;
   background-position: 0% 50%;
   box-shadow: 0 14px 40px -10px rgba(79, 70, 229, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.2) inset, 0 1.5px 0 rgba(255, 255, 255, 0.4) inset;

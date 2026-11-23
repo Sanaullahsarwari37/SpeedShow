@@ -1,18 +1,9 @@
 # SpeedShow by TalkNest
 
-A fast, private internet speed test (Next.js 16, App Router, Tailwind CSS 4) in the original liquid-glass design: orb gauge, live throughput chart and sky weather card. It starts by itself like fast.com and adds live local time, weather and connection details.
+A fast, private internet speed test (Next.js 16, App Router, Tailwind CSS 4) in a modern dark design: orb gauge, live throughput chart and sky weather card. Like fast.com, it starts measuring download the moment the page opens and adds live local time, weather and connection details.
 
 **Measures:** download, upload, idle latency, jitter and **loaded latency** (bufferbloat), with a live trace.
-**Also shows:** public IP, ISP + ASN, location, a live local clock for any city, weather (now, 24 h, 7 days), UV, air quality, sun position and moon phase.
-
-## Upgrading from v1
-
-Copying the new files over an old checkout leaves old files behind (for example `app/api/download`), and the build fails on them. Remove them once, then commit:
-
-```bash
-node scripts/cleanup-old-files.mjs
-git add -A && git commit -m "Remove old SpeedShow v1 files"
-```
+**Also shows:** public IP, ISP + ASN, location, a live local clock for any city, weather (now, hourly temperature / precipitation / wind tabs, 10 days), a plain-language rain outlook, UV, air quality, sun position and moon phase.
 
 ## Run
 
@@ -27,7 +18,7 @@ Node 20.9+. Set `NEXT_PUBLIC_SITE_URL=https://your-domain.com` in production (ca
 ## How the test works
 
 - Engine: the official `@cloudflare/speedtest` library (same as speed.cloudflare.com), loaded on idle so the first test starts instantly. `preconnect` warms the connection.
-- Order: latency → download → upload. Payloads grow until a request takes ~1 s, so slow lines finish quickly and gigabit lines still saturate.
+- Order (like fast.com): download starts instantly → idle ping on the quiet line → upload. The first tiny download doubles as the connection warm-up; if that very first connection fails, the test retries once quietly. Payloads grow until a request takes ~1 s, so slow lines finish quickly and gigabit lines still saturate.
 - Final bandwidth = 90th percentile of samples; latency = median. Loaded latency is measured during transfers.
 - Works on any connection, including VPNs and proxies (they just see a short note that results measure the VPN server).
 - Reliability: starts immediately, a 20 s stall watchdog, clean abort, clear error messages, and the Cloudflare edge name (e.g. "Frankfurt (FRA)").
@@ -35,7 +26,7 @@ Node 20.9+. Set `NEXT_PUBLIC_SITE_URL=https://your-domain.com` in production (ca
 
 ## Weather and local time
 
-Open-Meteo forecast + air quality, fetched in parallel on the server and cached (10 / 30 min). The sky follows the live conditions: clear shows full sun, partly cloudy shows the sun with a few clouds, overcast shows a grey cloud deck, fog shows drifting mist, and drizzle, rain and snow fall with the reported intensity. Thunderstorms add lightning bolts. Cloud count comes from the real cloud-cover %. Colours follow the time of day at that place (dawn, day, dusk, night), and the sun and moon are drawn where they actually are, glowing through or hidden by cloud. The local clock ticks live from the place's IANA time zone (DST-correct) and shows how far ahead or behind you it is. Search any city; the choice is remembered in the browser.
+Open-Meteo forecast + air quality, fetched in parallel on the server and cached (10 / 30 min). The sky follows the live conditions: clear shows full sun, partly cloudy shows the sun with a few clouds, overcast shows a grey cloud deck, fog shows drifting mist, and drizzle, rain and snow fall with the reported intensity. Thunderstorms add lightning bolts. Cloud count comes from the real cloud-cover %. Colours follow the time of day at that place (dawn, day, dusk, night), and the sun and moon are drawn where they actually are, glowing through or hidden by cloud. The local clock ticks live from the place's IANA time zone (DST-correct) and shows how far ahead or behind you it is. Search any city; the choice is remembered in the browser. The hourly chart has Temperature, Precipitation and Wind tabs; pick any day in the 10-day list to chart its hours.
 
 ## Performance
 
@@ -68,6 +59,7 @@ lib/                 theme (metric labels/colours/tones), svg (chart paths), spe
 ## Design system
 
 - **One metric config** (`lib/theme.ts`): label, icon and colours for download, upload, ping, loaded ping and jitter. The gauge, tiles, chart, progress steps, history and guide all read from it.
+- **Dark only**: one token set at the top of `app/globals.css` (no theme toggle, no `next-themes`).
 - **Surfaces** are Tailwind 4 utilities in `app/globals.css`: `glass` (cards), `console` (dark gauge/chart panels), `tile` (on sky/console), `glass-soft`. Radius scale: `--radius-panel` and `--radius-tile`.
 - **`<Surface>` + `<SurfaceHeader>`** render every card the same way; `<SectionHeading>`, `<Chip>`, `<IconTile>` cover the repeated bits.
 

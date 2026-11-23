@@ -41,16 +41,13 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: siteConfig.themeColor.light },
-    { media: "(prefers-color-scheme: dark)", color: siteConfig.themeColor.dark },
-  ],
+  colorScheme: "dark",
+  themeColor: siteConfig.themeColor,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" dir="ltr" className={`dark ${GeistSans.variable} ${GeistMono.variable}`}>
       <head>
         {/* Warm up the connection to the test servers before the test starts. */}
         <link rel="preconnect" href="https://speed.cloudflare.com" crossOrigin="anonymous" />

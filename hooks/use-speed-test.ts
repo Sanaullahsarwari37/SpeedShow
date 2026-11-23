@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { isAbort, runSpeedTest, type Phase } from "@/lib/speedtest";
+import { isAbort, runSpeedTest, type Phase, type RunResult } from "@/lib/speedtest";
 import type { SpeedMetrics, SpeedResult } from "@/lib/types";
 import { uid } from "@/lib/utils";
 
@@ -49,15 +49,29 @@ export function useSpeedTest({ onComplete, getMeta }: Options = {}) {
     if (ctrlRef.current) return;
     const ctrl = new AbortController();
     ctrlRef.current = ctrl;
-    setState({ ...EMPTY, phase: "latency", running: true });
+    setState({ ...EMPTY, phase: "download", running: true });
 
     try {
-      const r = await runSpeedTest({
-        signal: ctrl.signal,
-        onUpdate: (u) => {
-          if (!ctrl.signal.aborted) setState((s) => ({ ...s, ...u, running: true }));
-        },
-      });
+      let gotData = false;
+      const attempt = () =>
+        runSpeedTest({
+          signal: ctrl.signal,
+          onUpdate: (u) => {
+            if (ctrl.signal.aborted) return;
+            if (u.live > 0 || u.download) gotData = true;
+            setState((s) => ({ ...s, ...u, running: true }));
+          },
+        });
+      let r: RunResult;
+      try {
+        r = await attempt();
+      } catch (e) {
+        // One quiet retry when the very first connection fails (cold DNS/TLS, captive portal hiccup).
+        if (ctrl.signal.aborted || isAbort(e) || gotData) throw e;
+        await new Promise((res) => setTimeout(res, 600));
+        if (ctrl.signal.aborted) throw e;
+        r = await attempt();
+      }
       const result: SpeedResult = { id: uid(), at: Date.now(), ...r, ...cbRef.current.getMeta?.() };
       setState((s) => ({ ...s, ...r, phase: "done", running: false, live: r.download ?? 0, result }));
       cbRef.current.onComplete?.(result);

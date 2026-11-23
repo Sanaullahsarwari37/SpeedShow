@@ -44,8 +44,9 @@ export function useThroughputSeries(phase: Phase, running: boolean, value: numbe
   useEffect(() => {
     latest.current = value;
   }, [value]);
+  // Download is always the first stage, so it marks a new run.
   useEffect(() => {
-    if (phase === "latency") setSeries([]);
+    if (phase === "download") setSeries([]);
   }, [phase]);
 
   const sampling = running && (phase === "download" || phase === "upload");

@@ -80,6 +80,32 @@ export const aqiLevel = (aqi: number) =>
 export const visibilityLabel = (m: number) => (m >= 10000 ? `${Math.round(m / 1000)} km` : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`);
 
 /* ------------------------------------------------------------------ */
+/* Plain-language outlook                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One-line "what's next" summary from the coming hours, e.g.
+ * "Rain likely from 3 PM" or "No rain expected in the next 12 hours".
+ * `clock` formats an hour's local ISO time.
+ */
+export function precipOutlook(hours: WeatherHour[], clock: (iso: string) => string): string {
+  const next = hours.slice(0, 12);
+  if (!next.length) return "";
+  const wetNow = next[0].precip > 0.05 || (next[0].precipProb >= 60 && describeWeather(next[0].code).intensity > 0);
+  const snow = (h: WeatherHour) => describeWeather(h.code).kind === "snow";
+  if (wetNow) {
+    const stop = next.findIndex((h) => h.precipProb < 30 && h.precip < 0.05);
+    const what = snow(next[0]) ? "Snow" : "Rain";
+    return stop > 0 ? `${what} easing around ${clock(next[stop].time)}` : `${what} continuing for the next few hours`;
+  }
+  const start = next.findIndex((h) => h.precipProb >= 50);
+  if (start > 0) return `${snow(next[start]) ? "Snow" : "Rain"} likely from ${clock(next[start].time)} (${Math.round(next[start].precipProb)}%)`;
+  const maybe = next.findIndex((h) => h.precipProb >= 25);
+  if (maybe > 0) return `Slight chance of rain around ${clock(next[maybe].time)}`;
+  return "No rain expected in the next 12 hours";
+}
+
+/* ------------------------------------------------------------------ */
 /* Moon                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -163,17 +189,20 @@ export function parseCoordinate(value: string | null, min: number, max: number):
 
 const withKey = (base: string, commercial: string, apiKey?: string) => (apiKey ? commercial : base);
 
+export const FORECAST_DAYS = 10;
+
 export function buildForecastUrl(lat: number, lon: number, apiKey?: string): string {
   const params = new URLSearchParams({
     latitude: String(lat),
     longitude: String(lon),
     current:
       "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m",
-    hourly: "temperature_2m,precipitation_probability,weather_code,is_day,uv_index,visibility,dew_point_2m,wind_gusts_10m",
+    hourly:
+      "temperature_2m,precipitation_probability,precipitation,weather_code,is_day,uv_index,visibility,dew_point_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m",
     daily:
-      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,sunrise,sunset",
+      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,sunrise,sunset,wind_speed_10m_max,wind_direction_10m_dominant",
     timezone: "auto",
-    forecast_days: "7",
+    forecast_days: String(FORECAST_DAYS),
   });
   if (apiKey) params.set("apikey", apiKey);
   return `${withKey("https://api.open-meteo.com", "https://customer-api.open-meteo.com", apiKey)}/v1/forecast?${params}`;
@@ -205,20 +234,25 @@ export function normalizeWeather(raw: unknown, lat: number, lon: number, air: Ai
   const nowIdx = Math.max(0, hTime.findIndex((t) => s(t).slice(0, 13) >= nowHour));
 
   const hourly: WeatherHour[] = [];
-  for (let i = nowIdx; i < hTime.length && hourly.length < 24; i++) {
+  // Every remaining hour of the forecast, so any day can be charted.
+  for (let i = nowIdx; i < hTime.length; i++) {
     hourly.push({
       time: s(hTime[i]),
       temp: n(col("temperature_2m")[i]),
       code: n(col("weather_code")[i]),
       isDay: n(col("is_day")[i], 1) === 1,
       precipProb: n(col("precipitation_probability")[i]),
+      precip: n(col("precipitation")[i]),
+      windKmh: n(col("wind_speed_10m")[i]),
+      windDir: n(col("wind_direction_10m")[i]),
+      humidity: n(col("relative_humidity_2m")[i]),
     });
   }
 
   const d = (r.daily ?? {}) as Json;
   const dcol = (key: string) => arr(d[key]);
   const daily: WeatherDay[] = dcol("time")
-    .slice(0, 7)
+    .slice(0, FORECAST_DAYS)
     .map((t, i) => ({
       date: s(t),
       code: n(dcol("weather_code")[i]),
@@ -229,6 +263,8 @@ export function normalizeWeather(raw: unknown, lat: number, lon: number, air: Ai
       uvMax: nOrNull(dcol("uv_index_max")[i]),
       sunrise: s(dcol("sunrise")[i]) || null,
       sunset: s(dcol("sunset")[i]) || null,
+      windMax: nOrNull(dcol("wind_speed_10m_max")[i]),
+      windDir: nOrNull(dcol("wind_direction_10m_dominant")[i]),
     }));
 
   return {

@@ -19,7 +19,7 @@ import { useStoredState } from "@/hooks/use-stored";
 import { useFlash } from "@/hooks/use-ui";
 import { formatMs, speedLabel } from "@/lib/format";
 import { rateConnection } from "@/lib/rating";
-import { preloadEngine, type Phase } from "@/lib/speedtest";
+import { PHASE_ORDER, preloadEngine, type Phase } from "@/lib/speedtest";
 import { METRICS, TIER_TONE } from "@/lib/theme";
 import type { GeoPlace, SpeedResult } from "@/lib/types";
 import { cn, copyText, cssVars, joinParts } from "@/lib/utils";
@@ -45,12 +45,13 @@ const isHistory = (x: unknown): x is SpeedResult[] =>
 
 /* ----------------------------- pieces ----------------------------- */
 
+/** Download first (like fast.com), then ping on the quiet line, then upload. */
 const STEPS = [
-  { phase: "latency", metric: METRICS.ping },
   { phase: "download", metric: METRICS.download },
+  { phase: "latency", metric: METRICS.ping },
   { phase: "upload", metric: METRICS.upload },
 ] as const;
-const ORDER: Phase[] = ["latency", "download", "upload", "done"];
+const ORDER: Phase[] = [...PHASE_ORDER, "done"];
 
 function Steps({ phase }: { phase: Phase }) {
   const at = ORDER.indexOf(phase);
@@ -66,7 +67,11 @@ function Steps({ phase }: { phase: Phase }) {
             aria-current={active ? "step" : undefined}
             className={cn(
               "flex flex-1 items-center justify-center gap-1 rounded-full border px-2 py-1.5 text-[0.65rem] font-medium transition-colors duration-300",
-              active ? "border-white/30 bg-white/12 text-white" : done ? "border-white/15 bg-white/[0.06] text-white/80" : "border-white/10 text-white/45",
+              active
+                ? "border-white/25 bg-white/10 text-white shadow-[0_0_24px_-6px_rgba(255,255,255,0.25)]"
+                : done
+                  ? "border-white/12 bg-white/[0.05] text-white/80"
+                  : "border-white/[0.07] text-white/40",
             )}
           >
             <Icon className={cn("size-3", (active || done) && m.text, active && "animate-pulse")} aria-hidden="true" />
@@ -100,16 +105,20 @@ export function SpeedTest() {
   const series = useThroughputSeries(phase, running, state.live);
   const live = running && (phase === "download" || phase === "upload");
 
-  // Auto-start like fast.com, on any connection (VPN included), right after first paint.
+  // Auto-start like fast.com: download begins as soon as the page is interactive, on any connection (VPN included).
+  // A background tab waits until it is shown, so the result isn't throttled by the browser.
   const autoStarted = React.useRef(false);
   React.useEffect(() => {
-    void preloadEngine();
-    if (autoStarted.current || document.visibilityState === "hidden") return;
-    const t = setTimeout(() => {
+    const go = () => {
+      if (autoStarted.current || document.visibilityState === "hidden") return;
       autoStarted.current = true;
       void start();
-    }, 250);
-    return () => clearTimeout(t);
+    };
+    go();
+    if (autoStarted.current) return;
+    void preloadEngine();
+    document.addEventListener("visibilitychange", go);
+    return () => document.removeEventListener("visibilitychange", go);
   }, [start]);
 
   // Stable callbacks keep the memoised cards below from re-rendering during a test.
@@ -139,10 +148,10 @@ export function SpeedTest() {
   };
 
   const status = {
-    idle: "Starting automatically · private",
-    latency: "Measuring ping…",
-    download: "Measuring download…",
-    upload: "Measuring upload…",
+    idle: "Connecting to the nearest server…",
+    download: "Measuring download speed…",
+    latency: "Measuring ping on a quiet line…",
+    upload: "Measuring upload speed…",
     done: `Tested via ${result?.server ?? "Cloudflare"}`,
     error: "",
   }[phase];
@@ -160,10 +169,10 @@ export function SpeedTest() {
         </p>
       ) : null}
 
-      <section aria-label="Internet speed test" className="rise-in grid items-stretch gap-4 sm:gap-5 lg:grid-cols-12" style={cssVars({ "--d": "0.1s" })}>
+      <section id="test" aria-label="Internet speed test" className="rise-in grid scroll-mt-28 items-stretch gap-4 sm:gap-5 lg:grid-cols-12" style={cssVars({ "--d": "0.1s" })}>
         <Surface as="div" variant="console" className="flex flex-col justify-center p-4 sm:p-6 lg:order-2 lg:col-span-7">
-          <div aria-hidden="true" className="pointer-events-none absolute -top-20 -left-16 size-64 rounded-full bg-blue-500/20 blur-3xl" />
-          <div aria-hidden="true" className="pointer-events-none absolute -right-12 -bottom-20 size-64 rounded-full bg-violet-500/20 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -top-24 -left-20 size-72 rounded-full bg-cyan-500/10 blur-3xl" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -bottom-24 size-72 rounded-full bg-violet-600/12 blur-3xl" />
 
           <Steps phase={phase} />
           <SpeedGauge mbps={target} phase={phase} latency={state.latency} className="mt-1" />
@@ -213,7 +222,9 @@ export function SpeedTest() {
                 </Button>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">Tip: pause other downloads and streams for the most accurate result.</p>
+              <p className="text-sm text-muted-foreground">
+                {running ? "Testing… results are saved only in this browser." : "Tip: pause other downloads and streams for the most accurate result."}
+              </p>
             )}
           </Surface>
         </div>

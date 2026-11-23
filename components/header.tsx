@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 import { LogoMark } from "@/components/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { siteConfig } from "@/lib/site";
 
 const NAV = [
+  { href: "/#test", label: "Speed test" },
   { href: "/#weather", label: "Weather" },
   { href: "/#guide", label: "Guide" },
 ];
@@ -32,7 +32,9 @@ export function Header() {
               </li>
             ))}
           </ul>
-          <ThemeToggle />
+          <a href="/#test" className="btn-liquid ml-1 rounded-full px-4 py-2 text-sm font-semibold sm:hidden">
+            Test
+          </a>
         </nav>
       </div>
     </header>

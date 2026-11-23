@@ -2,7 +2,8 @@
  * SpeedShow measurement engine, built on the official @cloudflare/speedtest
  * library (the engine behind speed.cloudflare.com).
  *
- * Order (like fast.com): idle latency → download → upload. Each direction
+ * Order (like fast.com): download starts immediately → idle latency → upload.
+ * The first tiny download doubles as the connection warm-up. Each direction
  * ramps payload sizes and stops growing once a request lasts ~1 s, so slow
  * lines finish quickly and gigabit lines still get saturated. Final bandwidth
  * is the 90th percentile of samples; latency is the median. Loaded latency
@@ -11,7 +12,10 @@
 
 import type { SpeedMetrics } from "@/lib/types";
 
-export type Phase = "idle" | "latency" | "download" | "upload" | "done" | "error";
+export type Phase = "idle" | "download" | "latency" | "upload" | "done" | "error";
+
+/** Running phases in the order they happen. */
+export const PHASE_ORDER = ["download", "latency", "upload"] as const;
 
 export interface TestUpdate extends SpeedMetrics {
   phase: Phase;
@@ -31,14 +35,15 @@ const STALL_MS = 20_000;
 const TRACE_URL = "https://speed.cloudflare.com/cdn-cgi/trace";
 
 const MEASUREMENTS = [
-  { type: "latency" as const, numPackets: 1 }, // opens the connection (TLS handshake) so it doesn't skew results
-  { type: "latency" as const, numPackets: 16 },
+  // Download first, like fast.com: the first 100 kB request also opens the connection (TLS handshake).
   { type: "download" as const, bytes: 1e5, count: 1, bypassMinDuration: true },
-  { type: "download" as const, bytes: 1e5, count: 6 },
+  { type: "download" as const, bytes: 1e5, count: 5 },
   { type: "download" as const, bytes: 1e6, count: 5 },
   { type: "download" as const, bytes: 1e7, count: 4 },
   { type: "download" as const, bytes: 2.5e7, count: 3 },
   { type: "download" as const, bytes: 1e8, count: 2 },
+  // Idle ping on the now-quiet line, before upload.
+  { type: "latency" as const, numPackets: 20 },
   { type: "upload" as const, bytes: 1e5, count: 5 },
   { type: "upload" as const, bytes: 1e6, count: 4 },
   { type: "upload" as const, bytes: 1e7, count: 3 },
@@ -120,7 +125,7 @@ export async function runSpeedTest({
   return new Promise<RunResult>((resolve, reject) => {
     let settled = false;
     let watchdog: ReturnType<typeof setTimeout> | undefined;
-    let phase: Phase = "latency";
+    let phase: Phase = "download";
     let live = 0;
 
     const engine = new SpeedTest({
@@ -158,12 +163,26 @@ export async function runSpeedTest({
 
     signal.addEventListener("abort", onAbort, { once: true });
 
+    // Switch the UI the moment a stage starts, not when its first sample lands.
+    engine.onPhaseChange = ({ measurement }: { measurement?: { type?: string } }) => {
+      const type = measurement?.type;
+      if (settled || (type !== "download" && type !== "upload" && type !== "latency") || type === phase) return;
+      phase = type;
+      live = type === "latency" ? 0 : live;
+      armWatchdog();
+      try {
+        onUpdate({ ...readMetrics(engine.results as EngineResults), phase, live });
+      } catch {
+        /* results not ready yet */
+      }
+    };
+
     engine.onResultsChange = ({ type }: { type?: string }) => {
       if (settled) return;
       armWatchdog();
       try {
         const results = engine.results as EngineResults;
-        if (type === "download" || type === "upload") phase = type;
+        if (type === "download" || type === "upload" || type === "latency") phase = type;
         const sample =
           phase === "download"
             ? lastSample(results.getDownloadBandwidthPoints?.())

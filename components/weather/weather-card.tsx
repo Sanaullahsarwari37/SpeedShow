@@ -1,22 +1,23 @@
 "use client";
 
 import * as React from "react";
-import { MapPin, Navigation, RefreshCw } from "lucide-react";
+import { Droplets, MapPin, Navigation, RefreshCw, Sparkles, Umbrella, Wind } from "lucide-react";
 
 import { LocalClock } from "@/components/local-time";
 import { Chip, Skeleton } from "@/components/ui/primitives";
 import { Instruments } from "@/components/weather/instruments";
-import { Forecast, HourlyCurve, SunMoon } from "@/components/weather/panels";
+import { DailyForecast, HourlyForecast, type UnitFormat } from "@/components/weather/forecast";
+import { SunMoon } from "@/components/weather/panels";
 import { PlaceSearch } from "@/components/weather/place-search";
 import { Sky } from "@/components/weather/sky";
 import { SKY_CONTROL } from "@/components/weather/styles";
 import { useSunState } from "@/components/weather/use-sun";
 import { WeatherIcon } from "@/components/weather/weather-icon";
 import { useStoredState } from "@/hooks/use-stored";
-import { cToF, formatClock, isoMinutes, kmhToMph } from "@/lib/format";
+import { cToF, formatClock, isoMinutes, kmhToMph, windDirection } from "@/lib/format";
 import type { GeoPlace, WeatherData } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { describeWeather, skyColors } from "@/lib/weather";
+import { describeWeather, precipOutlook, skyColors } from "@/lib/weather";
 
 type Units = "c" | "f";
 const isUnits = (v: unknown): v is Units => v === "c" || v === "f";
@@ -33,13 +34,48 @@ interface Props {
   onRetry: () => void;
 }
 
+/** "Tuesday, 25 November" from "2026-11-25". */
+function dayTitle(iso: string | undefined) {
+  const [y, m, d] = (iso ?? "").split("-").map(Number);
+  if (!y || !m || !d) return "Hourly forecast";
+  return new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(y, m - 1, d)));
+}
+
 /** Weather + live local time for the detected or searched place, on a sky that matches the real time of day. */
 export default function WeatherCard({ data, isLoading, isError, isFetching, placeLabel, hasLocation, custom, onSelectPlace, onRetry }: Props) {
   const [units, setUnits] = useStoredState<Units>("speedshow:units", "c", isUnits);
   const s = useSunState(data);
 
-  const t = React.useCallback((c: number) => `${Math.round(units === "c" ? c : cToF(c))}°`, [units]);
-  const wind = React.useCallback((k: number) => (units === "c" ? `${Math.round(k)} km/h` : `${Math.round(kmhToMph(k))} mph`), [units]);
+  const fmt = React.useMemo<UnitFormat>(
+    () => ({
+      t: (c: number) => `${Math.round(units === "c" ? c : cToF(c))}°`,
+      tempUnit: units === "c" ? "°C" : "°F",
+      windValue: (k: number) => (units === "c" ? k : kmhToMph(k)),
+      windUnit: units === "c" ? "km/h" : "mph",
+    }),
+    [units],
+  );
+  const { t } = fmt;
+  const wind = React.useCallback((k: number) => `${Math.round(fmt.windValue(k))} ${fmt.windUnit}`, [fmt]);
+
+  // Day picked in the 10-day list drives the hourly chart; a new place starts on today.
+  const [day, setDay] = React.useState(0);
+  const placeKey = data ? `${data.latitude},${data.longitude}` : "";
+  const [shownKey, setShownKey] = React.useState(placeKey);
+  if (shownKey !== placeKey) {
+    setShownKey(placeKey);
+    setDay(0);
+  }
+  const dayHours = React.useMemo(() => {
+    if (!data) return [];
+    const d = data.daily[day];
+    if (day === 0 || !d) return data.hourly.slice(0, 24);
+    return data.hourly.filter((h) => h.time.startsWith(d.date));
+  }, [data, day]);
+  const outlook = React.useMemo(
+    () => (data ? precipOutlook(data.hourly, (iso) => formatClock(isoMinutes(iso), { minute: undefined })) : ""),
+    [data],
+  );
 
   const desc = data ? describeWeather(data.current.code) : null;
   const [c1, c2, c3] = skyColors(desc?.kind ?? "cloud", s?.part ?? "night");
@@ -116,15 +152,52 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
                 <p className="text-sm text-white/80">
                   Feels like {t(c.feelsLike)} · H {t(s.today?.max ?? c.temp)} · L {t(s.today?.min ?? c.temp)}
                 </p>
+                <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-white/85">
+                  <li className="flex items-center gap-1.5">
+                    <Umbrella className="size-4 text-sky-200" aria-hidden="true" />
+                    <span className="sr-only">Precipitation</span>
+                    {Math.round(data.hourly[0]?.precipProb ?? 0)}%
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <Droplets className="size-4 text-sky-200" aria-hidden="true" />
+                    <span className="sr-only">Humidity</span>
+                    {Math.round(c.humidity)}%
+                  </li>
+                  <li className="flex items-center gap-1.5">
+                    <Wind className="size-4 text-cyan-200" aria-hidden="true" />
+                    <span className="sr-only">Wind</span>
+                    {wind(c.windKmh)} {windDirection(c.windDir)}
+                  </li>
+                </ul>
+                {outlook ? (
+                  <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/15 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur">
+                    <Sparkles className="size-3.5 text-amber-200" aria-hidden="true" />
+                    {outlook}
+                  </p>
+                ) : null}
               </div>
               <LocalClock tz={data.timezone} className="tile px-4 py-3 sm:min-w-[15rem] sm:text-right" />
             </div>
 
-            <Instruments data={data} sun={s} t={t} wind={wind} />
-            <HourlyCurve hours={data.hourly} t={t} />
-            <div className="grid gap-3 lg:grid-cols-2">
-              <SunMoon s={s} />
-              {data.daily.length ? <Forecast days={data.daily} t={t} /> : null}
+            <HourlyForecast
+              hours={dayHours}
+              isToday={day === 0}
+              title={day === 0 ? "Next 24 hours" : dayTitle(data.daily[day]?.date)}
+              units={fmt}
+            />
+            <div className="grid gap-3 lg:grid-cols-5">
+              {data.daily.length ? (
+                <div className="lg:col-span-3">
+                  <DailyForecast days={data.daily} selected={day} onSelect={setDay} current={c.temp} units={fmt} />
+                </div>
+              ) : null}
+              <div className="lg:col-span-2">
+                <SunMoon s={s} />
+              </div>
+            </div>
+            <div>
+              <h3 className="mb-2 text-xs font-semibold tracking-wide text-white/75 uppercase">Current details</h3>
+              <Instruments data={data} sun={s} t={t} wind={wind} />
             </div>
 
             <p className="text-[0.7rem] text-white/70">

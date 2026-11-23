@@ -56,11 +56,15 @@ export interface WeatherCurrent {
 }
 
 export interface WeatherHour {
-  time: string;
-  temp: number;
+  time: string; // local ISO
+  temp: number; // °C
   code: number;
   isDay: boolean;
-  precipProb: number;
+  precipProb: number; // %
+  precip: number; // mm
+  windKmh: number;
+  windDir: number; // degrees
+  humidity: number; // %
 }
 
 export interface WeatherDay {
@@ -73,6 +77,8 @@ export interface WeatherDay {
   uvMax: number | null;
   sunrise: string | null;
   sunset: string | null;
+  windMax: number | null; // km/h
+  windDir: number | null; // dominant, degrees
 }
 
 export interface AirQuality {
