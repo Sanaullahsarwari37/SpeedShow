@@ -85,18 +85,14 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
 
   return (
     <section
-      id="weather"
       aria-labelledby="weather-title"
-      className="relative isolate flex min-h-[28rem] scroll-mt-28 flex-col overflow-hidden rounded-[var(--radius-panel)] border border-white/10 text-white shadow-[0_24px_64px_-24px_rgba(30,41,130,0.5)] sm:min-h-[32rem]"
+      className="relative isolate flex min-h-[28rem] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-white/10 text-white shadow-[0_24px_64px_-24px_rgba(30,41,130,0.5)] sm:min-h-[32rem]"
       style={{ background: `linear-gradient(150deg, ${c1} 0%, ${c2} 55%, ${c3} 100%)` }}
     >
       {data && desc && s ? <Sky kind={desc.kind} part={s.part} sun={s.sun} night={s.night} moon={s.moon.fraction} cover={data.current.cloudCover} intensity={desc.intensity} /> : null}
 
       {/* Toolbar */}
       <div className="relative z-20 flex items-center gap-2 p-5 sm:p-6">
-        <h2 id="weather-title" className="sr-only">
-          Weather and local time
-        </h2>
         <PlaceSearch onSelect={onSelectPlace} custom={custom} className="min-w-0 flex-1" />
         <div role="group" aria-label="Temperature unit" className="flex rounded-full border border-white/20 bg-white/10 p-0.5 text-xs font-semibold">
           {(["c", "f"] as const).map((u) => (
@@ -145,7 +141,7 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
                   <span className="mt-3 ml-1 text-2xl font-medium text-white/70">{units.toUpperCase()}</span>
                   <WeatherIcon code={c.code} isDay={s.isUp} className="mt-4 ml-3 size-10 text-white/90 sm:size-12" />
                 </div>
-                <p className="text-lg font-semibold">{desc.label}</p>
+                <p className="text-lg font-semibold">{c.label ?? desc.label}</p>
                 <p className="text-sm text-white/80">
                   Feels like {t(c.feelsLike)} · H {t(s.today?.max ?? c.temp)} · L {t(s.today?.min ?? c.temp)}
                 </p>
@@ -198,7 +194,18 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
             </div>
 
             <p className="text-[0.7rem] text-white/70">
-              Updated {formatClock(isoMinutes(c.time))} local time · Weather &amp; place search by{" "}
+              Updated {formatClock(isoMinutes(c.time))} local time ·{" "}
+              {data.source === "google" ? (
+                <>
+                  Weather by{" "}
+                  <a href="https://developers.google.com/maps/documentation/weather" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">
+                    Google
+                  </a>
+                  , air quality &amp; place search by{" "}
+                </>
+              ) : (
+                "Weather, air quality & place search by "
+              )}
               <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">
                 Open-Meteo.com
               </a>

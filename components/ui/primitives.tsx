@@ -35,6 +35,21 @@ export function SectionHeading({ id, title, highlight, lede }: { id: string; tit
   );
 }
 
+/** Left-aligned section intro: eyebrow, title and an optional note on the right. */
+export function SectionIntro({ id, eyebrow, title, aside }: { id: string; eyebrow: string; title: string; aside?: React.ReactNode }) {
+  return (
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 px-1 sm:mb-5">
+      <div>
+        <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-primary uppercase">{eyebrow}</p>
+        <h2 id={id} className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">
+          {title}
+        </h2>
+      </div>
+      {aside ? <div className="text-xs text-muted-foreground">{aside}</div> : null}
+    </div>
+  );
+}
+
 /** Small "live" pulse dot. */
 export function LiveDot({ className, on = true }: { className?: string; on?: boolean }) {
   return (

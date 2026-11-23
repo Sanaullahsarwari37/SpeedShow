@@ -9,7 +9,7 @@ import { useSvgId } from "@/hooks/use-ui";
 import { formatClock, isoMinutes, windDirection } from "@/lib/format";
 import { areaPath, smoothPath, type Point } from "@/lib/svg";
 import type { WeatherDay, WeatherHour } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, cssVars } from "@/lib/utils";
 
 export interface UnitFormat {
   /** °C → "23°" in the chosen unit. */
@@ -50,8 +50,8 @@ function TempChart({ hours, t, id }: { hours: WeatherHour[]; t: UnitFormat["t"];
           <stop offset="1" stopColor="#fbbf24" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={areaPath(pts, CH)} fill={`url(#${id}t)`} />
-      <path d={smoothPath(pts)} fill="none" stroke="#fcd34d" strokeWidth="2.5" strokeLinecap="round" />
+      <path d={areaPath(pts, CH)} fill={`url(#${id}t)`} className="chart-in" />
+      <path d={smoothPath(pts)} pathLength={1} fill="none" stroke="#fcd34d" strokeWidth="2.5" strokeLinecap="round" className="draw" />
       {pts.map(([x, y], i) => (
         <g key={hours[i].time}>
           <circle cx={x} cy={y} r="3" fill="#fde68a" />
@@ -74,7 +74,17 @@ function PrecipChart({ hours }: { hours: WeatherHour[] }) {
           <g key={h.time}>
             <title>{`${Math.round(h.precipProb)}% chance${h.precip > 0 ? `, ${h.precip.toFixed(1)} mm` : ""}`}</title>
             <rect x={x - 11} y={TOP} width="22" height={BASE - TOP} rx="5" fill="#fff" fillOpacity="0.06" />
-            <rect x={x - 11} y={BASE - height} width="22" height={height} rx="5" fill="#60a5fa" fillOpacity={0.35 + (h.precipProb / 100) * 0.6} />
+            <rect
+              x={x - 11}
+              y={BASE - height}
+              width="22"
+              height={height}
+              rx="5"
+              fill="#60a5fa"
+              fillOpacity={0.35 + (h.precipProb / 100) * 0.6}
+              className="grow-y"
+              style={cssVars({ "--d": `${i * 18}ms` })}
+            />
             <text x={x} y={TOP - 8} textAnchor="middle" fontSize="11.5" fontWeight="600" fill={h.precipProb >= 30 ? "#bfdbfe" : "#fff"} fillOpacity={h.precipProb >= 30 ? 1 : 0.7}>
               {Math.round(h.precipProb)}%
             </text>
@@ -159,15 +169,16 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
         role="tabpanel"
         aria-labelledby={`${tabsId}-${tab}`}
         tabIndex={0}
-        className="no-scrollbar -mx-4 mt-3 overflow-x-auto px-4 [mask-image:linear-gradient(to_right,transparent,#000_16px,#000_calc(100%-16px),transparent)] sm:-mx-5 sm:px-5"
+        className="no-scrollbar -mx-4 mt-3 snap-x snap-proximity overflow-x-auto overscroll-x-contain scroll-smooth px-4 scroll-px-4 [mask-image:linear-gradient(to_right,transparent,#000_16px,#000_calc(100%-16px),transparent)] sm:-mx-5 sm:px-5"
       >
         <div style={{ width }} className="relative">
           {isToday ? <div aria-hidden="true" className="absolute inset-y-0 left-0 rounded-xl bg-white/[0.07]" style={{ width: COL }} /> : null}
           <svg
+            key={`${tab}-${hours[0]?.time}`}
             width={width}
             height={CH}
             viewBox={`0 0 ${width} ${CH}`}
-            className="relative block overflow-visible"
+            className="chart-in relative block overflow-visible"
             role="img"
             aria-label={`${title}: hourly ${TABS.find((x) => x.id === tab)?.label.toLowerCase()}`}
           >
@@ -175,7 +186,7 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
           </svg>
           <ol className="relative flex">
             {hours.map((h, i) => (
-              <li key={h.time} className="flex shrink-0 flex-col items-center gap-1.5 pt-2 pb-1" style={{ width: COL }}>
+              <li key={h.time} title={h.label} className="flex shrink-0 snap-start flex-col items-center gap-1.5 pt-2 pb-1" style={{ width: COL }}>
                 <WeatherIcon code={h.code} isDay={h.isDay} className="size-5 text-white/90" />
                 <span className={cn("text-[0.7rem] tabular-nums", isToday && i === 0 ? "font-semibold text-white" : "text-white/65")}>
                   {isToday && i === 0 ? "Now" : hourLabel(h.time)}
@@ -227,7 +238,7 @@ export function DailyForecast({
             <button
               type="button"
               aria-pressed={selected === i}
-              aria-label={`${dayName(d.date, i)}: low ${units.t(d.min)}, high ${units.t(d.max)}, ${Math.round(d.precipProb)}% chance of rain. Show hourly forecast.`}
+              aria-label={`${dayName(d.date, i)}${d.label ? `, ${d.label}` : ""}: low ${units.t(d.min)}, high ${units.t(d.max)}, ${Math.round(d.precipProb)}% chance of rain. Show hourly forecast.`}
               onClick={() => onSelect(i)}
               className={cn(
                 "grid w-full grid-cols-[3rem_1.5rem_2.75rem_2.1rem_1fr_2.1rem] items-center gap-2 rounded-xl px-2 py-2 text-left text-sm transition-colors sm:gap-2.5",
@@ -243,8 +254,8 @@ export function DailyForecast({
               <span className="text-right text-white/65 tabular-nums">{units.t(d.min)}</span>
               <span className="relative h-1.5 rounded-full bg-black/25" aria-hidden="true">
                 <span
-                  className="absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-300 via-emerald-200 to-amber-300"
-                  style={{ left: `${pos(d.min)}%`, width: `${Math.max(6, pos(d.max) - pos(d.min))}%` }}
+                  className="grow-x absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-300 via-emerald-200 to-amber-300"
+                  style={cssVars({ left: `${pos(d.min)}%`, width: `${Math.max(6, pos(d.max) - pos(d.min))}%`, "--d": `${i * 40}ms` })}
                 />
                 {i === 0 ? (
                   <span

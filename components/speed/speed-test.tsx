@@ -10,7 +10,7 @@ import { SpeedGauge } from "@/components/speed/gauge";
 import { LiveChart } from "@/components/speed/live-chart";
 import { StatTiles } from "@/components/speed/stat-tiles";
 import { Button } from "@/components/ui/button";
-import { Chip } from "@/components/ui/primitives";
+import { Chip, SectionIntro } from "@/components/ui/primitives";
 import { Surface } from "@/components/ui/surface";
 import { WeatherCardSkeleton } from "@/components/weather/weather-skeleton";
 import { useThroughputSeries } from "@/hooks/use-live";
@@ -238,22 +238,33 @@ export function SpeedTest() {
       </section>
 
       {/* ───────────── Weather & local time ───────────── */}
-      <WeatherCard
-        data={weather.data}
-        isLoading={(!place && network.isPending) || weather.isLoading}
-        isError={weather.isError}
-        isFetching={weather.isFetching}
-        placeLabel={placeLabel}
-        hasLocation={hasLocation}
-        custom={place !== null}
-        onSelectPlace={setPlace}
-        onRetry={retryWeather}
-      />
+      <div id="weather" className="reveal scroll-mt-24 pt-10 sm:pt-14">
+        <SectionIntro
+          id="weather-title"
+          eyebrow="Weather"
+          title="Live weather & local time"
+          aside={weather.data ? `Data: ${weather.data.source === "google" ? "Google Weather" : "Open-Meteo"}` : undefined}
+        />
+        <WeatherCard
+          data={weather.data}
+          isLoading={(!place && network.isPending) || weather.isLoading}
+          isError={weather.isError}
+          isFetching={weather.isFetching}
+          placeLabel={placeLabel}
+          hasLocation={hasLocation}
+          custom={place !== null}
+          onSelectPlace={setPlace}
+          onRetry={retryWeather}
+        />
+      </div>
 
       {/* ───────────── Connection & history ───────────── */}
-      <div className="grid gap-5 sm:gap-6 lg:grid-cols-2">
-        <NetworkCard data={network.data} isLoading={network.isPending} isError={network.isError} isFetching={network.isFetching} onRetry={retryNetwork} />
-        <HistoryCard items={history} ready={historyReady} onClear={clearHistory} />
+      <div className="reveal pt-10 sm:pt-14">
+        <SectionIntro id="network-title" eyebrow="Network" title="Your connection & test history" />
+        <div className="grid gap-5 sm:gap-6 lg:grid-cols-2">
+          <NetworkCard data={network.data} isLoading={network.isPending} isError={network.isError} isFetching={network.isFetching} onRetry={retryNetwork} />
+          <HistoryCard items={history} ready={historyReady} onClear={clearHistory} />
+        </div>
       </div>
     </div>
   );

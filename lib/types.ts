@@ -46,6 +46,8 @@ export interface WeatherCurrent {
   gustKmh: number | null;
   windDir: number; // degrees
   code: number; // WMO
+  /** Provider's own wording, e.g. Google's "Mostly cloudy". Falls back to the WMO label. */
+  label?: string;
   isDay: boolean;
   precip: number; // mm
   cloudCover: number; // %
@@ -59,6 +61,7 @@ export interface WeatherHour {
   time: string; // local ISO
   temp: number; // °C
   code: number;
+  label?: string;
   isDay: boolean;
   precipProb: number; // %
   precip: number; // mm
@@ -70,6 +73,7 @@ export interface WeatherHour {
 export interface WeatherDay {
   date: string;
   code: number;
+  label?: string;
   max: number;
   min: number;
   precipProb: number;
@@ -87,7 +91,11 @@ export interface AirQuality {
   pm10: number | null;
 }
 
+export type WeatherSource = "google" | "open-meteo";
+
 export interface WeatherData {
+  /** Which provider answered (shown in the attribution). */
+  source: WeatherSource;
   latitude: number;
   longitude: number;
   timezone: string;

@@ -270,6 +270,7 @@ export function normalizeWeather(raw: unknown, lat: number, lon: number, air: Ai
     }));
 
   return {
+    source: "open-meteo",
     latitude: lat,
     longitude: lon,
     timezone: s(r.timezone) || "UTC",

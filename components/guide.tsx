@@ -15,7 +15,7 @@ export function Guide() {
         {ORDER.map((k) => {
           const m = METRICS[k];
           return (
-            <Surface as="li" key={k} pad="md" className="rounded-[var(--radius-tile)] last:sm:col-span-2 last:lg:col-span-1">
+            <Surface as="li" key={k} pad="md" className="reveal rounded-[var(--radius-tile)] transition-colors hover:border-white/15 last:sm:col-span-2 last:lg:col-span-1">
               <IconTile icon={m.icon} className="mb-3 size-10" iconClassName={`size-5 ${m.text}`} />
               <h3 className="font-semibold tracking-tight">{m.label}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-pretty text-muted-foreground">{m.help}</p>
@@ -24,7 +24,7 @@ export function Guide() {
         })}
       </ul>
 
-      <Surface as="div" className="mt-5">
+      <Surface as="div" className="reveal mt-5">
         <div className="no-scrollbar overflow-x-auto">
           <table className="w-full min-w-[34rem] text-sm">
             <caption className="px-6 pt-5 text-left font-semibold">What speed do you need?</caption>

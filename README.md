@@ -26,7 +26,9 @@ Node 20.9+. Set `NEXT_PUBLIC_SITE_URL=https://your-domain.com` in production (ca
 
 ## Weather and local time
 
-Open-Meteo forecast + air quality, fetched in parallel on the server and cached (10 / 30 min). The sky follows the live conditions: clear shows full sun, partly cloudy shows the sun with a few clouds, overcast shows a grey cloud deck, fog shows drifting mist, and drizzle, rain and snow fall with the reported intensity. Thunderstorms add lightning bolts. Cloud count comes from the real cloud-cover %. Colours follow the time of day at that place (dawn, day, dusk, night), and the sun and moon are drawn where they actually are, glowing through or hidden by cloud. The local clock ticks live from the place's IANA time zone (DST-correct) and shows how far ahead or behind you it is. Search any city; the choice is remembered in the browser. The hourly chart has Temperature, Precipitation and Wind tabs; pick any day in the 10-day list to chart its hours.
+**Provider:** the official Google Weather API (Google Maps Platform) when `GOOGLE_WEATHER_API_KEY` is set, with Open-Meteo as the automatic fallback (no key needed). Google's own condition wording ("Mostly cloudy", "Light rain showers") is shown as-is; condition types map to the sky scene and icons, and every unit is read from the response. Air quality and place search always use Open-Meteo.
+
+Forecast + air quality fetched in parallel on the server and cached (10 / 30 min). The sky follows the live conditions: clear shows full sun, partly cloudy shows the sun with a few clouds, overcast shows a grey cloud deck, fog shows drifting mist, and drizzle, rain and snow fall with the reported intensity. Thunderstorms add lightning bolts. Cloud count comes from the real cloud-cover %. Colours follow the time of day at that place (dawn, day, dusk, night), and the sun and moon are drawn where they actually are, glowing through or hidden by cloud. The local clock ticks live from the place's IANA time zone (DST-correct) and shows how far ahead or behind you it is. Search any city; the choice is remembered in the browser. The hourly chart has Temperature, Precipitation and Wind tabs; pick any day in the 10-day list to chart its hours.
 
 ## Performance
 
@@ -67,4 +69,4 @@ Brand copy: `lib/site.ts`. Colours: tokens at the top of `app/globals.css`.
 
 ## Environment
 
-See `.env.example`: `NEXT_PUBLIC_SITE_URL`, optional `IPAPI_KEY`, `VPN_CHECK=off` to skip VPN detection, optional `OPEN_METEO_API_KEY` for commercial use.
+See `.env.example`: `NEXT_PUBLIC_SITE_URL`, optional `IPAPI_KEY`, `VPN_CHECK=off` to skip VPN detection, optional `OPEN_METEO_API_KEY` for commercial use, optional `GOOGLE_WEATHER_API_KEY` to use Google Weather.
