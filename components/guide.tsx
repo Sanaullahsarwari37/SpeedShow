@@ -8,7 +8,7 @@ const ORDER: MetricKey[] = ["download", "upload", "ping", "loaded", "jitter"];
 /** Server-rendered explainer: useful to people, indexable by search engines. */
 export function Guide() {
   return (
-    <section id="guide" aria-labelledby="guide-title" className="scroll-mt-28">
+    <section id="guide" aria-labelledby="guide-title" className="lazy-section scroll-mt-28">
       <SectionHeading id="guide-title" title="Understand your" highlight="results" lede="Speed is only half the story. Ping decides how responsive your connection feels." />
 
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

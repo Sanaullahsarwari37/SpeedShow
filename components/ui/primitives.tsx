@@ -45,6 +45,6 @@ export function LiveDot({ className, on = true }: { className?: string; on?: boo
   );
 }
 
-export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={cn("skeleton relative overflow-hidden rounded-lg bg-muted", className)} />;
+export function Skeleton({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return <div aria-hidden="true" style={style} className={cn("skeleton relative overflow-hidden rounded-lg bg-muted", className)} />;
 }

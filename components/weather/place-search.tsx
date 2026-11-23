@@ -98,7 +98,7 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
             id={listId}
             role="listbox"
             aria-label="Matching places"
-            className="absolute inset-x-0 top-12 z-30 max-h-80 overflow-auto rounded-2xl border border-white/15 bg-slate-950/95 p-1.5 text-white shadow-2xl backdrop-blur-xl"
+            className="absolute inset-x-0 top-12 z-30 max-h-80 overflow-auto rounded-2xl border border-white/15 bg-[#0b0c12] p-1.5 text-white shadow-2xl"
           >
             {results.map((r, i) => (
               <li

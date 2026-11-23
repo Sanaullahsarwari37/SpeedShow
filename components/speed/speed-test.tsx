@@ -12,6 +12,7 @@ import { StatTiles } from "@/components/speed/stat-tiles";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/primitives";
 import { Surface } from "@/components/ui/surface";
+import { WeatherCardSkeleton } from "@/components/weather/weather-skeleton";
 import { useThroughputSeries } from "@/hooks/use-live";
 import { useNetworkInfo, useWeather } from "@/hooks/use-queries";
 import { useSpeedTest } from "@/hooks/use-speed-test";
@@ -28,7 +29,7 @@ import { cn, copyText, cssVars, joinParts } from "@/lib/utils";
 const WeatherCard = React.memo(
   dynamic(() => import("@/components/weather/weather-card"), {
     ssr: false,
-    loading: () => <div className="glass h-[46rem] animate-pulse rounded-[var(--radius-panel)]" aria-hidden="true" />,
+    loading: () => <WeatherCardSkeleton />,
   }),
 );
 
@@ -171,8 +172,14 @@ export function SpeedTest() {
 
       <section id="test" aria-label="Internet speed test" className="rise-in grid scroll-mt-28 items-stretch gap-4 sm:gap-5 lg:grid-cols-12" style={cssVars({ "--d": "0.1s" })}>
         <Surface as="div" variant="console" className="flex flex-col justify-center p-4 sm:p-6 lg:order-2 lg:col-span-7">
-          <div aria-hidden="true" className="pointer-events-none absolute -top-24 -left-20 size-72 rounded-full bg-cyan-500/10 blur-3xl" />
-          <div aria-hidden="true" className="pointer-events-none absolute -right-16 -bottom-24 size-72 rounded-full bg-violet-600/12 blur-3xl" />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(22rem 18rem at 0% 0%, rgba(6,182,212,0.1), transparent 70%), radial-gradient(22rem 18rem at 100% 100%, rgba(124,58,237,0.12), transparent 70%)",
+            }}
+          />
 
           <Steps phase={phase} />
           <SpeedGauge mbps={target} phase={phase} latency={state.latency} className="mt-1" />

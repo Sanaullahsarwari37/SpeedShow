@@ -87,7 +87,7 @@ export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency,
 
   return (
     <div className={cn("relative mx-auto aspect-square w-full max-w-[20rem]", className)}>
-      <div aria-hidden="true" className="absolute inset-[10%] rounded-full opacity-70 blur-3xl transition-colors duration-700" style={{ background: `radial-gradient(circle, ${s.glow}66, transparent 70%)` }} />
+      <div aria-hidden="true" className="absolute -inset-[4%] rounded-full opacity-70" style={{ background: `radial-gradient(circle, ${s.glow}55 0%, ${s.glow}1f 38%, transparent 66%)` }} />
       {active ? <div aria-hidden="true" className="pulse-ring absolute inset-[15%] rounded-full border" style={{ borderColor: `${s.glow}77` }} /> : null}
 
       <svg viewBox="0 0 400 400" className="relative size-full overflow-visible" aria-hidden="true">
@@ -108,13 +108,6 @@ export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency,
           <clipPath id={`${id}c`}>
             <circle cx={CX} cy={CY} r={ORB_R - 2} />
           </clipPath>
-          <filter id={`${id}f`} x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="6" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
 
         <path d={ARC} fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="14" strokeLinecap="round" />
@@ -129,7 +122,11 @@ export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency,
             </g>
           );
         })}
-        <path d={ARC} pathLength={100} fill="none" stroke={`url(#${id}a)`} strokeWidth="14" strokeLinecap="round" strokeDasharray={`${Math.max(0.01, fraction * 100)} 100`} filter={`url(#${id}f)`} />
+        {/* Glow = a wide faint stroke under the arc (an SVG blur filter would re-rasterise every frame). */}
+        {fraction > 0 ? (
+          <path d={ARC} pathLength={100} fill="none" stroke={`url(#${id}a)`} strokeOpacity="0.2" strokeWidth="30" strokeLinecap="round" strokeDasharray={`${fraction * 100} 100`} />
+        ) : null}
+        <path d={ARC} pathLength={100} fill="none" stroke={`url(#${id}a)`} strokeWidth="14" strokeLinecap="round" strokeDasharray={`${Math.max(0.01, fraction * 100)} 100`} />
 
         <circle cx={CX} cy={CY} r={ORB_R} fill={`url(#${id}o)`} />
         <g clipPath={`url(#${id}c)`}>

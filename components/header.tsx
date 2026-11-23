@@ -12,7 +12,7 @@ const NAV = [
 export function Header() {
   return (
     <header className="sticky top-3 z-30 mx-auto mt-3 w-[calc(100%-1.25rem)] max-w-7xl sm:top-4 sm:mt-4">
-      <div className="glass flex items-center justify-between rounded-full py-2 pr-2 pl-3 [--glow:0_0_#0000] sm:py-2.5 sm:pl-4">
+      <div className="frosted flex items-center justify-between rounded-full py-2 pr-2 pl-3 sm:py-2.5 sm:pl-4">
         <Link href="/" className="group flex items-center gap-3 rounded-full" aria-label={`${siteConfig.name} home`}>
           <LogoMark id="hdr" className="size-9 transition-transform duration-300 group-hover:scale-105 sm:size-10" />
           <span className="flex flex-col leading-none">

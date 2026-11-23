@@ -35,7 +35,6 @@
   --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.018) 100%);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 30px 60px -30px rgba(0, 0, 0, 0.9), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
-  --glow: 0 0 0 transparent;
   --blur: 20px;
   color-scheme: dark;
 }
@@ -78,13 +77,25 @@
 }
 
 /* ---------- Surfaces (utilities, so variants like sm:/hover: work) ---------- */
+/* Cards sit on a near-solid dark backdrop, so they need no (costly) backdrop blur. */
 @utility glass {
   position: relative;
-  background: var(--glass-bg);
+  background: var(--glass-bg), #0b0c12;
   border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow), var(--glow);
-  -webkit-backdrop-filter: blur(var(--blur)) saturate(170%);
-  backdrop-filter: blur(var(--blur)) saturate(170%);
+  box-shadow: var(--glass-shadow);
+}
+/* Frosted bar for content scrolling underneath (sticky header only). */
+@utility frosted {
+  background: rgba(11, 12, 18, 0.72);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
+  backdrop-filter: blur(var(--blur)) saturate(160%);
+}
+/* Skip layout and paint for off-screen sections until they scroll near. */
+@utility lazy-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
 }
 @utility glass-soft {
   background: var(--muted);
@@ -104,8 +115,6 @@
   border-radius: var(--radius-tile);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.08);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
 }
 @utility text-gradient {
   background: linear-gradient(100deg, #67e8f9 0%, #818cf8 45%, #c084fc 100%);
@@ -132,21 +141,8 @@
     display: none;
   }
 }
-@utility noise {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-}
 
 /* ---------- Motion (only what's used) ---------- */
-@keyframes blob-a {
-  50% {
-    transform: translate3d(8vw, 8vh, 0) scale(1.1);
-  }
-}
-@keyframes blob-b {
-  50% {
-    transform: translate3d(-10vw, -6vh, 0) scale(1.12);
-  }
-}
 @keyframes wave-move {
   to {
     transform: translateX(-232px);
@@ -230,12 +226,6 @@
   }
 }
 
-.blob-a {
-  animation: blob-a 30s ease-in-out infinite;
-}
-.blob-b {
-  animation: blob-b 36s ease-in-out infinite;
-}
 .wave-1 {
   animation: wave-move 5.5s linear infinite;
 }

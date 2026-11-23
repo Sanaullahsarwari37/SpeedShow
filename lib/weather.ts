@@ -178,6 +178,8 @@ const n = (v: unknown, fallback = 0): number => (typeof v === "number" && Number
 const nOrNull = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const s = (v: unknown): string => (typeof v === "string" ? v : "");
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+/** Round to `d` decimals: keeps the JSON payload small (nobody needs 7.0999999 °C). */
+const rd = (v: number, d = 1) => Math.round(v * 10 ** d) / 10 ** d;
 
 /** Validate a lat/lon query param, rounded to ~1 km (better cache hits, more privacy). */
 export function parseCoordinate(value: string | null, min: number, max: number): number | null {
@@ -238,14 +240,14 @@ export function normalizeWeather(raw: unknown, lat: number, lon: number, air: Ai
   for (let i = nowIdx; i < hTime.length; i++) {
     hourly.push({
       time: s(hTime[i]),
-      temp: n(col("temperature_2m")[i]),
+      temp: rd(n(col("temperature_2m")[i])),
       code: n(col("weather_code")[i]),
       isDay: n(col("is_day")[i], 1) === 1,
-      precipProb: n(col("precipitation_probability")[i]),
-      precip: n(col("precipitation")[i]),
-      windKmh: n(col("wind_speed_10m")[i]),
-      windDir: n(col("wind_direction_10m")[i]),
-      humidity: n(col("relative_humidity_2m")[i]),
+      precipProb: Math.round(n(col("precipitation_probability")[i])),
+      precip: rd(n(col("precipitation")[i]), 2),
+      windKmh: rd(n(col("wind_speed_10m")[i])),
+      windDir: Math.round(n(col("wind_direction_10m")[i])),
+      humidity: Math.round(n(col("relative_humidity_2m")[i])),
     });
   }
 

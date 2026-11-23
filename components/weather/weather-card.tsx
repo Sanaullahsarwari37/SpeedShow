@@ -4,7 +4,7 @@ import * as React from "react";
 import { Droplets, MapPin, Navigation, RefreshCw, Sparkles, Umbrella, Wind } from "lucide-react";
 
 import { LocalClock } from "@/components/local-time";
-import { Chip, Skeleton } from "@/components/ui/primitives";
+import { Chip } from "@/components/ui/primitives";
 import { Instruments } from "@/components/weather/instruments";
 import { DailyForecast, HourlyForecast, type UnitFormat } from "@/components/weather/forecast";
 import { SunMoon } from "@/components/weather/panels";
@@ -12,6 +12,7 @@ import { PlaceSearch } from "@/components/weather/place-search";
 import { Sky } from "@/components/weather/sky";
 import { SKY_CONTROL } from "@/components/weather/styles";
 import { useSunState } from "@/components/weather/use-sun";
+import { WeatherBodySkeleton } from "@/components/weather/weather-skeleton";
 import { WeatherIcon } from "@/components/weather/weather-icon";
 import { useStoredState } from "@/hooks/use-stored";
 import { cToF, formatClock, isoMinutes, kmhToMph, windDirection } from "@/lib/format";
@@ -117,11 +118,7 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
 
       <div className="relative z-10 flex-1 px-5 pb-5 sm:px-6 sm:pb-6">
         {busy ? (
-          <div className="space-y-4" aria-busy="true" aria-label="Loading weather">
-            <Skeleton className="h-24 w-56 bg-white/15" />
-            <Skeleton className="h-28 w-full bg-white/15" />
-            <Skeleton className="h-40 w-full bg-white/15" />
-          </div>
+          <WeatherBodySkeleton />
         ) : isError || !data || !desc || !s || !c ? (
           <div className="py-16 text-center text-sm text-white/85">
             <p>{hasLocation ? "Weather isn't loading right now." : "Search a city above to see its weather and local time."}</p>
@@ -132,7 +129,7 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
             ) : null}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="rise-in space-y-4">
             {/* Hero: conditions + live local clock */}
             <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
               <div className="min-w-0">
@@ -170,7 +167,7 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
                   </li>
                 </ul>
                 {outlook ? (
-                  <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/15 px-3 py-1.5 text-xs font-medium text-white/90 backdrop-blur">
+                  <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-xs font-medium text-white/90">
                     <Sparkles className="size-3.5 text-amber-200" aria-hidden="true" />
                     {outlook}
                   </p>

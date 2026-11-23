@@ -20,8 +20,14 @@ const rnd = (i: number, salt: number) => {
   return x - Math.floor(x);
 };
 
-/** Sky-arc position (0 = east horizon, 1 = west horizon) in % of the top band. */
-const arc = (f: number) => ({ left: `${8 + f * 84}%`, top: `${78 - Math.sin(Math.PI * f) * 62}%` });
+/**
+ * Sky-arc position (0 = east horizon, 1 = west horizon), kept inside the empty part
+ * of the card so the sun and moon never sit behind the temperature or the clock:
+ * right of the temperature on phones, the middle band between hero and clock from `sm`.
+ */
+const arc = (f: number) => cssVars({ "--f": f.toFixed(3), "--s": Math.sin(Math.PI * f).toFixed(3) });
+const ARC_POS =
+  "left-[calc(60%+var(--f)*32%)] top-[calc(58%-var(--s)*22%)] sm:left-[calc(36%+var(--f)*34%)] sm:top-[calc(88%-var(--s)*50%)]";
 
 /* ------------------------------------------------------------------ */
 /* Moon                                                                */
@@ -187,7 +193,7 @@ export const Sky = React.memo(function Sky({ kind, part, sun, night, moon, cover
       {/* Sun and moon on their real arc */}
       <div className="absolute inset-x-0 top-0 h-72 sm:h-80">
         {sun != null && bodyOpacity > 0 ? (
-          <div className="absolute size-44 -translate-x-1/2 -translate-y-1/2 sm:size-52" style={{ ...arc(sun), opacity: bodyOpacity }}>
+          <div className={`absolute size-36 -translate-x-1/2 -translate-y-1/2 sm:size-52 ${ARC_POS}`} style={{ ...arc(sun), opacity: bodyOpacity }}>
             <svg viewBox="0 0 200 200" className="size-full">
               <circle cx="100" cy="100" r="96" fill={`url(#${gid}-sun)`} />
               {kind === "clear" || kind === "partly" ? (
@@ -207,7 +213,7 @@ export const Sky = React.memo(function Sky({ kind, part, sun, night, moon, cover
           </div>
         ) : null}
         {night != null && bodyOpacity > 0 ? (
-          <div className="absolute size-16 -translate-x-1/2 -translate-y-1/2 sm:size-20" style={{ ...arc(night), opacity: bodyOpacity }}>
+          <div className={`absolute size-12 -translate-x-1/2 -translate-y-1/2 sm:size-20 ${ARC_POS}`} style={{ ...arc(night), opacity: bodyOpacity }}>
             <div className="absolute -inset-6 rounded-full bg-indigo-200/15 blur-2xl" />
             <MoonGlyph fraction={moon} className="relative size-full drop-shadow-[0_0_24px_rgba(199,210,254,0.55)]" />
           </div>

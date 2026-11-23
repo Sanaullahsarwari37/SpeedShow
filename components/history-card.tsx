@@ -71,7 +71,17 @@ export const HistoryCard = React.memo(function HistoryCard({ items, ready, onCle
       />
       <div className="flex flex-1 flex-col px-5 py-5 sm:px-6">
         {!ready ? (
-          <Skeleton className="h-40 w-full" />
+          <div className="space-y-4" aria-busy="true">
+            <Skeleton className="h-24 w-full rounded-xl" />
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center justify-between gap-4">
+                <Skeleton className="h-3.5 w-24" />
+                <Skeleton className="h-3.5 w-16" />
+                <Skeleton className="h-3.5 w-16" />
+                <Skeleton className="h-3.5 w-12" />
+              </div>
+            ))}
+          </div>
         ) : !items.length ? (
           <p className="m-auto max-w-xs py-8 text-center text-sm text-muted-foreground">Your results appear here after each test, so you can compare rooms or times of day.</p>
         ) : (
