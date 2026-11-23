@@ -1,4 +1,4 @@
-import type { AirQuality, WeatherData, WeatherDay, WeatherHour } from "@/lib/types";
+import type { AirQuality, WeatherData, WeatherDay, WeatherHour, WeatherQuarter } from "@/lib/types";
 
 /* ------------------------------------------------------------------ */
 /* WMO codes                                                           */
@@ -86,9 +86,20 @@ export const visibilityLabel = (m: number) => (m >= 10000 ? `${Math.round(m / 10
 /**
  * One-line "what's next" summary from the coming hours, e.g.
  * "Rain likely from 3 PM" or "No rain expected in the next 12 hours".
- * `clock` formats an hour's local ISO time.
+ * `clock` formats a local ISO time (hour only unless `withMinutes`).
  */
-export function precipOutlook(hours: WeatherHour[], clock: (iso: string) => string): string {
+export function precipOutlook(hours: WeatherHour[], clock: (iso: string, withMinutes?: boolean) => string, nowcast: WeatherQuarter[] = []): string {
+  // Next 2 hours: 15-minute data is sharper than hourly chances.
+  if (nowcast.length) {
+    const wet = (q: WeatherQuarter) => q.precip >= 0.1;
+    const what = (q: WeatherQuarter) => (describeWeather(q.code).kind === "snow" ? "Snow" : "Rain");
+    if (wet(nowcast[0])) {
+      const stop = nowcast.findIndex((q) => !wet(q));
+      return stop > 0 ? `${what(nowcast[0])} stopping around ${clock(nowcast[stop].time, true)}` : `${what(nowcast[0])} for at least the next 2 hours`;
+    }
+    const start = nowcast.findIndex(wet);
+    if (start > 0) return `${what(nowcast[start])} starting around ${clock(nowcast[start].time, true)}`;
+  }
   const next = hours.slice(0, 12);
   if (!next.length) return "";
   const wetNow = next[0].precip > 0.05 || (next[0].precipProb >= 60 && describeWeather(next[0].code).intensity > 0);
@@ -203,6 +214,8 @@ export function buildForecastUrl(lat: number, lon: number, apiKey?: string): str
       "temperature_2m,precipitation_probability,precipitation,weather_code,is_day,uv_index,visibility,dew_point_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m",
     daily:
       "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,sunrise,sunset,wind_speed_10m_max,wind_direction_10m_dominant",
+    minutely_15: "precipitation,weather_code",
+    forecast_minutely_15: "8",
     timezone: "auto",
     forecast_days: String(FORECAST_DAYS),
   });
@@ -269,8 +282,15 @@ export function normalizeWeather(raw: unknown, lat: number, lon: number, air: Ai
       windDir: nOrNull(dcol("wind_direction_10m_dominant")[i]),
     }));
 
+  const m = (r.minutely_15 ?? {}) as Json;
+  const mTime = arr(m.time);
+  const nowcast: WeatherQuarter[] = mTime.map((t, i) => ({
+    time: s(t),
+    precip: rd(n(arr(m.precipitation)[i]), 2),
+    code: n(arr(m.weather_code)[i]),
+  }));
+
   return {
-    source: "open-meteo",
     latitude: lat,
     longitude: lon,
     timezone: s(r.timezone) || "UTC",
@@ -294,6 +314,7 @@ export function normalizeWeather(raw: unknown, lat: number, lon: number, air: Ai
       time: s(c.time),
     },
     hourly,
+    nowcast,
     daily,
     air,
     updatedAt: new Date().toISOString(),

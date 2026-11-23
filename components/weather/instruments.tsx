@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Droplets, Eye, Gauge, Leaf, Navigation, Sun, Thermometer, Umbrella, type LucideIcon } from "lucide-react";
+import { Activity, Droplets, Eye, Gauge, Leaf, Navigation, Sun, Thermometer, Umbrella, type LucideIcon } from "lucide-react";
 
+import { Surface, SurfaceHeader } from "@/components/ui/surface";
 import type { SunState } from "@/components/weather/use-sun";
 import { windDirection } from "@/lib/format";
 import type { WeatherData } from "@/lib/types";
@@ -14,7 +15,7 @@ function Ring({ value, max = 100, color = "#7dd3fc", icon: Icon, iconClass }: { 
   return (
     <div className="relative grid size-12 shrink-0 place-items-center">
       <svg viewBox="0 0 40 40" className="absolute inset-0 size-full -rotate-90" aria-hidden="true">
-        <circle cx="20" cy="20" r={r} fill="none" stroke="white" strokeOpacity="0.2" strokeWidth="4" />
+        <circle cx="20" cy="20" r={r} fill="none" stroke="white" strokeOpacity="0.1" strokeWidth="4" />
         <circle cx="20" cy="20" r={r} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(Math.min(max, Math.max(0, value)) / max) * c} ${c}`} />
       </svg>
       {Icon ? <Icon className={`size-4 ${iconClass ?? ""}`} aria-hidden="true" /> : null}
@@ -24,7 +25,7 @@ function Ring({ value, max = 100, color = "#7dd3fc", icon: Icon, iconClass }: { 
 
 function Disc({ icon: Icon, iconClass, children }: { icon: LucideIcon; iconClass: string; children?: React.ReactNode }) {
   return (
-    <div className="relative grid size-12 shrink-0 place-items-center rounded-full border border-white/25">
+    <div className="relative grid size-12 shrink-0 place-items-center rounded-full border border-white/15">
       <Icon className={`size-5 ${iconClass}`} aria-hidden="true" />
       {children}
     </div>
@@ -44,12 +45,12 @@ const AQI_STOPS = [50, 100, 150, 200];
 
 function Instrument({ dial, label, value, note }: { dial: React.ReactNode; label: string; value: React.ReactNode; note?: string }) {
   return (
-    <div className="tile flex flex-col items-start gap-2 p-3 sm:flex-row sm:items-center sm:gap-3">
+    <div className="flex min-w-0 items-center gap-3 bg-[var(--surface)] px-4 py-4 sm:px-5">
       {dial}
       <div className="w-full min-w-0">
-        <dt className="text-xs whitespace-nowrap text-white/75">{label}</dt>
+        <dt className="text-xs whitespace-nowrap text-muted-foreground">{label}</dt>
         <dd className="text-base leading-tight font-semibold tabular-nums">{value}</dd>
-        {note ? <dd className="truncate text-[0.7rem] text-white/70">{note}</dd> : null}
+        {note ? <dd className="truncate text-[0.7rem] text-muted-foreground">{note}</dd> : null}
       </div>
     </div>
   );
@@ -64,7 +65,7 @@ export function Instruments({ data, sun, t, wind }: { data: WeatherData; sun: Su
     {
       label: "Wind",
       dial: (
-        <div className="relative grid size-12 shrink-0 place-items-center rounded-full border border-white/25">
+        <div className="relative grid size-12 shrink-0 place-items-center rounded-full border border-white/15">
           <Navigation className="size-5 text-sky-200" style={{ transform: `rotate(${c.windDir + 135}deg)` }} aria-hidden="true" />
           <span className="absolute -top-1 text-[0.55rem] font-bold text-white/70">N</span>
         </div>
@@ -104,10 +105,13 @@ export function Instruments({ data, sun, t, wind }: { data: WeatherData; sun: Su
     },
   ];
   return (
-    <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {items.map((i) => (
-        <Instrument key={i.label} {...i} />
-      ))}
-    </dl>
+    <Surface as="div">
+      <SurfaceHeader icon={Activity} title="Current details" />
+      <dl className="grid grid-cols-2 gap-px bg-border sm:grid-cols-4">
+        {items.map((i) => (
+          <Instrument key={i.label} {...i} />
+        ))}
+      </dl>
+    </Surface>
   );
 }

@@ -59,8 +59,7 @@ export const HistoryCard = React.memo(function HistoryCard({ items, ready, onCle
         id="history-title"
         icon={History}
         title="Recent tests"
-        description="Saved only in this browser. Never uploaded."
-        divided
+        description="Saved only in this browser, never uploaded"
         actions={
           items.length ? (
             <Button variant="ghost" size="sm" onClick={onClear}>

@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Droplet, Thermometer, Umbrella, Wind } from "lucide-react";
+import { CalendarDays, Clock3, Droplet, Thermometer, Umbrella, Wind } from "lucide-react";
 
-import { SKY_LABEL } from "@/components/weather/styles";
+import { Surface, SurfaceHeader } from "@/components/ui/surface";
 import { WeatherIcon } from "@/components/weather/weather-icon";
 import { useSvgId } from "@/hooks/use-ui";
 import { formatClock, isoMinutes, windDirection } from "@/lib/format";
@@ -135,13 +135,13 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
   const legend = tab === "temp" ? units.tempUnit : tab === "precip" ? "chance of rain" : units.windUnit;
 
   return (
-    <div className="tile p-4 sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className={SKY_LABEL}>
-          {title}
-          <span className="ml-2 font-normal tracking-normal normal-case text-white/55">{legend}</span>
-        </h3>
-        <div role="tablist" aria-label="Hourly forecast view" className="flex rounded-full border border-white/15 bg-black/15 p-0.5">
+    <Surface as="div" className="h-full">
+      <SurfaceHeader
+        icon={Clock3}
+        title={title}
+        description={legend}
+        actions={
+        <div role="tablist" aria-label="Hourly forecast view" className="mr-1 flex rounded-full border border-border bg-black/30 p-0.5">
           {TABS.map((x) => (
             <button
               key={x.id}
@@ -153,7 +153,7 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
               onClick={() => setTab(x.id)}
               className={cn(
                 "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                tab === x.id ? "bg-white text-slate-900 shadow" : "text-white/75 hover:text-white",
+                tab === x.id ? "bg-white text-zinc-900" : "text-muted-foreground hover:text-foreground",
               )}
             >
               <x.icon className="size-3.5" aria-hidden="true" />
@@ -161,7 +161,8 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
             </button>
           ))}
         </div>
-      </div>
+        }
+      />
 
       <div
         ref={scroller}
@@ -169,7 +170,7 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
         role="tabpanel"
         aria-labelledby={`${tabsId}-${tab}`}
         tabIndex={0}
-        className="no-scrollbar -mx-4 mt-3 snap-x snap-proximity overflow-x-auto overscroll-x-contain scroll-smooth px-4 scroll-px-4 [mask-image:linear-gradient(to_right,transparent,#000_16px,#000_calc(100%-16px),transparent)] sm:-mx-5 sm:px-5"
+        className="no-scrollbar snap-x snap-proximity overflow-x-auto overscroll-x-contain scroll-smooth px-4 pt-6 pb-3 scroll-px-4 [mask-image:linear-gradient(to_right,transparent,#000_16px,#000_calc(100%-16px),transparent)] sm:px-5"
       >
         <div style={{ width }} className="relative">
           {isToday ? <div aria-hidden="true" className="absolute inset-y-0 left-0 rounded-xl bg-white/[0.07]" style={{ width: COL }} /> : null}
@@ -196,7 +197,7 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
           </ol>
         </div>
       </div>
-    </div>
+    </Surface>
   );
 }
 
@@ -230,9 +231,9 @@ export function DailyForecast({
   const pos = (v: number) => ((v - lo) / span) * 100;
 
   return (
-    <div className="tile p-3 sm:p-4">
-      <h3 className={cn(SKY_LABEL, "mb-2 px-1")}>{days.length}-day forecast</h3>
-      <ul className="space-y-0.5">
+    <Surface as="div" className="h-full">
+      <SurfaceHeader icon={CalendarDays} title={`${days.length}-day forecast`} description="Tap a day for its hourly chart" />
+      <ul className="space-y-0.5 p-2 sm:p-3">
         {days.map((d, i) => (
           <li key={d.date}>
             <button
@@ -242,7 +243,7 @@ export function DailyForecast({
               onClick={() => onSelect(i)}
               className={cn(
                 "grid w-full grid-cols-[3rem_1.5rem_2.75rem_2.1rem_1fr_2.1rem] items-center gap-2 rounded-xl px-2 py-2 text-left text-sm transition-colors sm:gap-2.5",
-                selected === i ? "bg-white/15 ring-1 ring-white/20" : "hover:bg-white/[0.07]",
+                selected === i ? "bg-white/[0.08] ring-1 ring-white/10" : "hover:bg-white/[0.04]",
               )}
             >
               <span className="font-medium">{dayName(d.date, i)}</span>
@@ -252,14 +253,14 @@ export function DailyForecast({
                 {Math.round(d.precipProb)}%
               </span>
               <span className="text-right text-white/65 tabular-nums">{units.t(d.min)}</span>
-              <span className="relative h-1.5 rounded-full bg-black/25" aria-hidden="true">
+              <span className="relative h-1.5 rounded-full bg-white/[0.06]" aria-hidden="true">
                 <span
                   className="grow-x absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-300 via-emerald-200 to-amber-300"
                   style={cssVars({ left: `${pos(d.min)}%`, width: `${Math.max(6, pos(d.max) - pos(d.min))}%`, "--d": `${i * 40}ms` })}
                 />
                 {i === 0 ? (
                   <span
-                    className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-slate-900/60 bg-white"
+                    className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-zinc-900 bg-white"
                     style={{ left: `${Math.min(100, Math.max(0, pos(current)))}%` }}
                   />
                 ) : null}
@@ -269,6 +270,6 @@ export function DailyForecast({
           </li>
         ))}
       </ul>
-    </div>
+    </Surface>
   );
 }

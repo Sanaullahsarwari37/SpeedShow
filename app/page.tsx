@@ -31,7 +31,7 @@ export default function HomePage() {
 
         <SpeedTest />
 
-        <div className="mt-24 sm:mt-28">
+        <div className="pt-10 sm:pt-14">
           <Guide />
         </div>
       </main>

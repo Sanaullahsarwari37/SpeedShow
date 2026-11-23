@@ -24,17 +24,17 @@ export function Surface<T extends React.ElementType = "section">({ as, variant =
   return <Comp className={cn("relative overflow-hidden rounded-[var(--radius-panel)]", VARIANT[variant], PAD[pad], className)} {...props} />;
 }
 
-/** Card header row: icon + title (+ optional description) on the left, actions on the right. */
+/** The one card header used across the site: icon + title (+ note) on the left, actions on the right. */
 export function SurfaceHeader({
   id,
   icon: Icon,
   title,
   description,
   actions,
-  divided = false,
+  divided = true,
   className,
 }: {
-  id: string;
+  id?: string;
   icon?: LucideIcon;
   title: React.ReactNode;
   description?: React.ReactNode;
@@ -43,15 +43,15 @@ export function SurfaceHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-start justify-between gap-3 px-5 py-4 sm:px-6", divided && "border-b border-border/70", className)}>
+    <div className={cn("flex min-h-13 items-center justify-between gap-3 px-5 py-3 sm:px-6", divided && "border-b border-border", className)}>
       <div className="min-w-0">
-        <h2 id={id} className="flex items-center gap-2 text-[0.95rem] font-semibold tracking-tight">
-          {Icon ? <Icon className="size-4 text-primary" aria-hidden="true" /> : null}
-          {title}
+        <h2 id={id} className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+          {Icon ? <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
+          <span className="truncate">{title}</span>
         </h2>
-        {description ? <p className="mt-0.5 text-xs text-muted-foreground">{description}</p> : null}
+        {description ? <p className="mt-0.5 truncate text-xs text-muted-foreground">{description}</p> : null}
       </div>
-      {actions ? <div className="-my-1 -mr-2 flex shrink-0 items-center gap-0.5">{actions}</div> : null}
+      {actions ? <div className="-mr-2 flex shrink-0 items-center gap-1">{actions}</div> : null}
     </div>
   );
 }

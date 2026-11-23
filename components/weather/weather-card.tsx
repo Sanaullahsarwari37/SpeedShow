@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Droplets, MapPin, Navigation, RefreshCw, Sparkles, Umbrella, Wind } from "lucide-react";
+import { MapPin, Navigation, RefreshCw, Sparkles } from "lucide-react";
 
 import { LocalClock } from "@/components/local-time";
 import { Chip } from "@/components/ui/primitives";
@@ -14,12 +14,13 @@ import { SKY_CONTROL } from "@/components/weather/styles";
 import { useSunState } from "@/components/weather/use-sun";
 import { WeatherBodySkeleton } from "@/components/weather/weather-skeleton";
 import { WeatherIcon } from "@/components/weather/weather-icon";
-import type { Units } from "@/components/weather/weather-mini";
-import { cToF, formatClock, isoMinutes, kmhToMph, windDirection } from "@/lib/format";
+import { cToF, formatClock, isoMinutes, kmhToMph } from "@/lib/format";
 import type { GeoPlace, WeatherData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { describeWeather, precipOutlook, skyColors } from "@/lib/weather";
 
+
+export type Units = "c" | "f";
 
 interface Props {
   data: WeatherData | undefined;
@@ -73,7 +74,10 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
     return data.hourly.filter((h) => h.time.startsWith(d.date));
   }, [data, day]);
   const outlook = React.useMemo(
-    () => (data ? precipOutlook(data.hourly, (iso) => formatClock(isoMinutes(iso), { minute: undefined })) : ""),
+    () =>
+      data
+        ? precipOutlook(data.hourly, (iso, withMinutes) => formatClock(isoMinutes(iso), withMinutes ? {} : { minute: undefined }), data.nowcast ?? [])
+        : "",
     [data],
   );
 
@@ -83,139 +87,109 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
   const c = data?.current;
 
   return (
-    <section
-      aria-labelledby="weather-title"
-      className="relative isolate flex min-h-[28rem] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-white/10 text-white shadow-[0_24px_64px_-32px_rgba(0,0,0,0.9)] sm:min-h-[32rem]"
-      style={{ background: `linear-gradient(150deg, ${c1} 0%, ${c2} 55%, ${c3} 100%)` }}
-    >
-      {data && desc && s ? <Sky kind={desc.kind} part={s.part} sun={s.sun} night={s.night} moon={s.moon.fraction} cover={data.current.cloudCover} intensity={desc.intensity} /> : null}
-
-      {/* Toolbar */}
-      <div className="relative z-20 flex items-center gap-2 p-5 sm:p-6">
-        <PlaceSearch onSelect={onSelectPlace} custom={custom} className="min-w-0 flex-1" />
-        <div role="group" aria-label="Temperature unit" className="flex rounded-full border border-white/20 bg-white/10 p-0.5 text-xs font-semibold">
-          {(["c", "f"] as const).map((u) => (
-            <button
-              key={u}
-              type="button"
-              aria-pressed={units === u}
-              onClick={() => setUnits(u)}
-              className={cn("rounded-full px-2.5 py-1.5 transition-colors", units === u ? "bg-white text-slate-900" : "text-white/80 hover:text-white")}
-            >
-              °{u.toUpperCase()}
-            </button>
-          ))}
+    <section id="weather" aria-labelledby="weather-title" className="reveal scroll-mt-24 pt-10 sm:pt-14">
+      <div className="mb-4 flex flex-col gap-3 px-1 sm:mb-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-primary uppercase">Weather</p>
+          <h2 id="weather-title" className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">
+            Forecast &amp; local time
+          </h2>
         </div>
-        <button type="button" aria-label="Refresh weather" onClick={onRetry} className={cn(SKY_CONTROL, "grid size-10 shrink-0 place-items-center rounded-full")}>
-          <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
-        </button>
+        <div className="flex items-center gap-2 lg:w-[28rem]">
+          <PlaceSearch onSelect={onSelectPlace} custom={custom} className="min-w-0 flex-1" />
+          <div role="group" aria-label="Temperature unit" className="flex rounded-full border border-border bg-black/30 p-0.5 text-xs font-semibold">
+            {(["c", "f"] as const).map((u) => (
+              <button
+                key={u}
+                type="button"
+                aria-pressed={units === u}
+                onClick={() => setUnits(u)}
+                className={cn("rounded-full px-2.5 py-1.5 transition-colors", units === u ? "bg-white text-zinc-900" : "text-muted-foreground hover:text-foreground")}
+              >
+                °{u.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <button type="button" aria-label="Refresh weather" onClick={onRetry} className={cn(SKY_CONTROL, "grid size-10 shrink-0 place-items-center rounded-full")}>
+            <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
+          </button>
+        </div>
       </div>
 
-      <div className="relative z-10 flex-1 px-5 pb-5 sm:px-6 sm:pb-6">
-        {busy ? (
-          <WeatherBodySkeleton />
-        ) : isError || !data || !desc || !s || !c ? (
-          <div className="py-16 text-center text-sm text-white/85">
-            <p>{hasLocation ? "Weather isn't loading right now." : "Search a city above to see its weather and local time."}</p>
-            {hasLocation ? (
-              <button type="button" onClick={onRetry} className={cn(SKY_CONTROL, "mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 font-medium")}>
-                <RefreshCw className="size-4" /> Try again
-              </button>
-            ) : null}
-          </div>
-        ) : (
-          <div className="rise-in space-y-4">
-            {/* Hero: conditions + live local clock */}
-            <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
-              <div className="min-w-0">
-                <p className="flex items-center gap-1.5 text-sm font-medium text-white/85">
-                  {custom ? <MapPin className="size-4 shrink-0" aria-hidden="true" /> : <Navigation className="size-4 shrink-0" aria-hidden="true" />}
-                  <span className="truncate">{placeLabel}</span>
-                  <Chip tone="sky" className="uppercase">
-                    {custom ? "Searched" : "Your location"}
-                  </Chip>
-                </p>
-                <div className="mt-1 flex items-start font-mono text-7xl font-semibold tracking-tighter tabular-nums [text-shadow:0_4px_30px_rgba(0,0,0,0.25)] sm:text-8xl">
+      {busy ? (
+        <WeatherBodySkeleton />
+      ) : isError || !data || !desc || !s || !c ? (
+        <div className="glass rounded-[var(--radius-panel)] px-6 py-16 text-center text-sm text-muted-foreground">
+          <p>{hasLocation ? "Weather isn't loading right now." : "Search a city above to see its weather and local time."}</p>
+          {hasLocation ? (
+            <button type="button" onClick={onRetry} className={cn(SKY_CONTROL, "mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 font-medium")}>
+              <RefreshCw className="size-4" /> Try again
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          <div className="rise-in grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-12">
+            {/* Now: the one card with the live sky */}
+            <div
+              className="relative isolate flex min-h-[26rem] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-white/10 p-5 text-white sm:p-6 lg:col-span-5 lg:row-span-2"
+              style={{ background: `linear-gradient(155deg, ${c1} 0%, ${c2} 55%, ${c3} 100%)` }}
+            >
+              <Sky kind={desc.kind} part={s.part} sun={s.sun} night={s.night} moon={s.moon.fraction} cover={c.cloudCover} intensity={desc.intensity} />
+              <p className="relative z-10 flex items-center gap-1.5 text-sm font-medium text-white/90">
+                {custom ? <MapPin className="size-4 shrink-0" aria-hidden="true" /> : <Navigation className="size-4 shrink-0" aria-hidden="true" />}
+                <span className="truncate">{placeLabel}</span>
+                <Chip tone="sky" className="uppercase">
+                  {custom ? "Searched" : "Your location"}
+                </Chip>
+              </p>
+              <div className="relative z-10 mt-4">
+                <div className="flex items-start font-mono text-7xl font-semibold tracking-tighter tabular-nums [text-shadow:0_4px_30px_rgba(0,0,0,0.25)] sm:text-8xl">
                   {t(c.temp)}
-                  <span className="mt-3 ml-1 text-2xl font-medium text-white/70">{units.toUpperCase()}</span>
-                  <WeatherIcon code={c.code} isDay={s.isUp} className="mt-4 ml-3 size-10 text-white/90 sm:size-12" />
+                  <WeatherIcon code={c.code} isDay={s.isUp} className="mt-3 ml-3 size-10 text-white/90 sm:size-12" />
                 </div>
-                <p className="text-lg font-semibold">{c.label ?? desc.label}</p>
+                <p className="mt-1 text-lg font-semibold">{c.label ?? desc.label}</p>
                 <p className="text-sm text-white/80">
                   Feels like {t(c.feelsLike)} · H {t(s.today?.max ?? c.temp)} · L {t(s.today?.min ?? c.temp)}
                 </p>
-                <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-white/85">
-                  <li className="flex items-center gap-1.5">
-                    <Umbrella className="size-4 text-sky-200" aria-hidden="true" />
-                    <span className="sr-only">Precipitation</span>
-                    {Math.round(data.hourly[0]?.precipProb ?? 0)}%
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <Droplets className="size-4 text-sky-200" aria-hidden="true" />
-                    <span className="sr-only">Humidity</span>
-                    {Math.round(c.humidity)}%
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <Wind className="size-4 text-cyan-200" aria-hidden="true" />
-                    <span className="sr-only">Wind</span>
-                    {wind(c.windKmh)} {windDirection(c.windDir)}
-                  </li>
-                </ul>
                 {outlook ? (
-                  <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-xs font-medium text-white/90">
+                  <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/25 px-3 py-1.5 text-xs font-medium text-white/90">
                     <Sparkles className="size-3.5 text-amber-200" aria-hidden="true" />
                     {outlook}
                   </p>
                 ) : null}
               </div>
-              <LocalClock tz={data.timezone} className="tile px-4 py-3 sm:min-w-[15rem] sm:text-right" />
+              <LocalClock tz={data.timezone} className="tile relative z-10 mt-auto px-4 py-3" />
             </div>
 
-            <HourlyForecast
-              hours={dayHours}
-              isToday={day === 0}
-              title={day === 0 ? "Next 24 hours" : dayTitle(data.daily[day]?.date)}
-              units={fmt}
-            />
-            <div className="grid gap-3 lg:grid-cols-5">
-              {data.daily.length ? (
-                <div className="lg:col-span-3">
-                  <DailyForecast days={data.daily} selected={day} onSelect={setDay} current={c.temp} units={fmt} />
-                </div>
-              ) : null}
-              <div className="lg:col-span-2">
-                <SunMoon s={s} />
-              </div>
+            <div className="lg:col-span-7">
+              <HourlyForecast hours={dayHours} isToday={day === 0} title={day === 0 ? "Next 24 hours" : dayTitle(data.daily[day]?.date)} units={fmt} />
             </div>
-            <div>
-              <h3 className="mb-2 text-xs font-semibold tracking-wide text-white/75 uppercase">Current details</h3>
+            <div className="lg:col-span-7">
               <Instruments data={data} sun={s} t={t} wind={wind} />
             </div>
-
-            <p className="text-[0.7rem] text-white/70">
-              Updated {formatClock(isoMinutes(c.time))} local time ·{" "}
-              {data.source === "google" ? (
-                <>
-                  Weather by{" "}
-                  <a href="https://developers.google.com/maps/documentation/weather" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">
-                    Google
-                  </a>
-                  , air quality &amp; place search by{" "}
-                </>
-              ) : (
-                "Weather, air quality & place search by "
-              )}
-              <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">
-                Open-Meteo.com
-              </a>
-              {" · "}
-              <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-white">
-                GeoNames
-              </a>
-            </p>
+            {data.daily.length ? (
+              <div className="lg:col-span-7">
+                <DailyForecast days={data.daily} selected={day} onSelect={setDay} current={c.temp} units={fmt} />
+              </div>
+            ) : null}
+            <div className="lg:col-span-5">
+              <SunMoon s={s} />
+            </div>
           </div>
-        )}
-      </div>
+
+          <p className="mt-4 px-1 text-[0.7rem] text-muted-foreground">
+            Updated {formatClock(isoMinutes(c.time))} local time · Weather, air quality &amp; place search by{" "}
+            <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
+              Open-Meteo.com
+            </a>{" "}
+            (open data, CC BY 4.0) ·{" "}
+            <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
+              GeoNames
+            </a>
+          </p>
+        </>
+      )}
     </section>
   );
 }

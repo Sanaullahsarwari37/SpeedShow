@@ -46,7 +46,7 @@ export interface WeatherCurrent {
   gustKmh: number | null;
   windDir: number; // degrees
   code: number; // WMO
-  /** Provider's own wording, e.g. Google's "Mostly cloudy". Falls back to the WMO label. */
+  /** Optional provider wording; the UI falls back to the WMO label. */
   label?: string;
   isDay: boolean;
   precip: number; // mm
@@ -91,11 +91,14 @@ export interface AirQuality {
   pm10: number | null;
 }
 
-export type WeatherSource = "google" | "open-meteo";
+/** Precipitation for the next two hours in 15-minute steps (nowcast). */
+export interface WeatherQuarter {
+  time: string; // local ISO
+  precip: number; // mm in the 15 minutes
+  code: number;
+}
 
 export interface WeatherData {
-  /** Which provider answered (shown in the attribution). */
-  source: WeatherSource;
   latitude: number;
   longitude: number;
   timezone: string;
@@ -103,6 +106,8 @@ export interface WeatherData {
   utcOffsetSec: number;
   current: WeatherCurrent;
   hourly: WeatherHour[];
+  /** Next 2 hours, 15-minute steps (empty if unavailable). */
+  nowcast: WeatherQuarter[];
   daily: WeatherDay[];
   air: AirQuality | null;
   updatedAt: string;

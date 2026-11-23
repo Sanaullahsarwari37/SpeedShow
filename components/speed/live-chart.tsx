@@ -2,7 +2,10 @@
 
 import * as React from "react";
 
+import { Activity } from "lucide-react";
+
 import { LiveDot } from "@/components/ui/primitives";
+import { SurfaceHeader } from "@/components/ui/surface";
 import type { Direction, SeriesPoint } from "@/hooks/use-live";
 import { useSvgId } from "@/hooks/use-ui";
 import { formatSpeed } from "@/lib/format";
@@ -34,20 +37,25 @@ export const LiveChart = React.memo(function LiveChart({ series, live }: { serie
   const scale = formatSpeed(max);
 
   return (
-    <div>
-      <div className="mb-2.5 flex items-center justify-between text-[0.7rem] font-medium tracking-wide text-white/60">
-        <span className="flex items-center gap-2">
-          <LiveDot on={live} className={live ? "text-cyan-400" : "text-white/40"} />
-          Live throughput
-        </span>
-        <span className="flex items-center gap-3.5">
-          {DIRS.map((d) => (
-            <span key={d} className="flex items-center gap-1.5">
-              <i className={`size-1.5 rounded-full ${METRICS[d].dot}`} /> {METRICS[d].label}
-            </span>
-          ))}
-        </span>
-      </div>
+    <div className="flex h-full flex-col">
+      <SurfaceHeader
+        icon={Activity}
+        title={
+          <span className="flex items-center gap-2">
+            Live throughput <LiveDot on={live} className={live ? "text-cyan-400" : "text-white/30"} />
+          </span>
+        }
+        actions={
+          <span className="flex items-center gap-3 pr-2 text-xs text-muted-foreground">
+            {DIRS.map((d) => (
+              <span key={d} className="flex items-center gap-1.5">
+                <i className={`size-1.5 rounded-full ${METRICS[d].dot}`} /> {METRICS[d].label}
+              </span>
+            ))}
+          </span>
+        }
+      />
+      <div className="flex flex-1 flex-col justify-center p-4 sm:px-5">
 
       <div className="relative overflow-hidden rounded-[var(--radius-tile)] border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent">
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block h-36 w-full sm:h-40" role="img" aria-label="Real-time download and upload throughput">
@@ -91,6 +99,7 @@ export const LiveChart = React.memo(function LiveChart({ series, live }: { serie
           {scale.value} {scale.unit}
         </span>
         {!series.length ? <span className="absolute inset-0 grid place-items-center text-xs text-white/40">The speed curve appears here during the test</span> : null}
+      </div>
       </div>
     </div>
   );

@@ -2,8 +2,10 @@
 
 import * as React from "react";
 
+import { Gauge, Timer } from "lucide-react";
+
 import { Chip, LiveDot } from "@/components/ui/primitives";
-import { Surface } from "@/components/ui/surface";
+import { Surface, SurfaceHeader } from "@/components/ui/surface";
 import type { TestState } from "@/hooks/use-speed-test";
 import { useEased } from "@/hooks/use-live";
 import { formatMs, formatSpeed } from "@/lib/format";
@@ -16,7 +18,7 @@ const LABEL = "flex items-center gap-1.5 text-xs font-medium text-muted-foregrou
 function Big({ metric, value, unit, note, active }: { metric: MetricKey; value: string; unit: string; note: string; active: boolean }) {
   const m = METRICS[metric];
   return (
-    <div className="min-w-0 px-5 py-5 sm:px-6">
+    <div className="min-w-0 px-5 py-4 sm:px-6">
       <dt className={LABEL}>
         <m.icon className={cn("size-3.5", m.text)} aria-hidden="true" />
         {m.label}
@@ -43,9 +45,10 @@ export const SpeedTile = React.memo(function SpeedTile({ state }: { state: TestS
   const u = formatSpeed(ul);
   return (
     <Surface as="div">
+      <SurfaceHeader icon={Gauge} title="Speed" actions={<span className="pr-2 text-xs text-muted-foreground">90th percentile</span>} />
       <dl className="grid grid-cols-2 divide-x divide-border">
-        <Big metric="download" value={dl != null ? d.value : "—"} unit={d.unit} note={phase === "download" ? "Measuring…" : dl != null ? "90th percentile" : "Waiting"} active={phase === "download"} />
-        <Big metric="upload" value={ul != null ? u.value : "—"} unit={u.unit} note={phase === "upload" ? "Measuring…" : ul != null ? "90th percentile" : "After ping"} active={phase === "upload"} />
+        <Big metric="download" value={dl != null ? d.value : "—"} unit={d.unit} note={phase === "download" ? "Measuring…" : dl != null ? "Done" : "Waiting"} active={phase === "download"} />
+        <Big metric="upload" value={ul != null ? u.value : "—"} unit={u.unit} note={phase === "upload" ? "Measuring…" : ul != null ? "Done" : "After ping"} active={phase === "upload"} />
       </dl>
     </Surface>
   );
@@ -54,7 +57,7 @@ export const SpeedTile = React.memo(function SpeedTile({ state }: { state: TestS
 function Small({ metric, value, note, active }: { metric: MetricKey; value: string; note: string; active?: boolean }) {
   const m = METRICS[metric];
   return (
-    <div className="min-w-0 px-4 py-4 sm:px-5">
+    <div className="min-w-0 px-5 py-4 sm:px-6">
       <dt className={LABEL}>
         <m.icon className={cn("size-3.5", m.text)} aria-hidden="true" />
         {"short" in m ? m.short : m.label}
@@ -76,16 +79,19 @@ export const LatencyTile = React.memo(function LatencyTile({ state }: { state: T
   const grade = state.phase === "done" ? bufferbloatGrade(state.latency, worst) : null;
   return (
     <Surface as="div">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-5">
-        <span className="text-xs font-medium text-muted-foreground">Responsiveness</span>
-        {grade ? (
-          <Chip tone={grade.tone} className="font-mono">
-            Bufferbloat {grade.grade}
-          </Chip>
-        ) : (
-          <span className="text-[0.7rem] text-muted-foreground/70">Bufferbloat grade after the test</span>
-        )}
-      </div>
+      <SurfaceHeader
+        icon={Timer}
+        title="Responsiveness"
+        actions={
+          grade ? (
+            <Chip tone={grade.tone} className="mr-2 font-mono">
+              Bufferbloat {grade.grade}
+            </Chip>
+          ) : (
+            <span className="pr-2 text-xs text-muted-foreground">Bufferbloat grade at the end</span>
+          )
+        }
+      />
       <dl className="grid grid-cols-3 divide-x divide-border">
         <Small metric="ping" value={formatMs(state.latency)} note="Idle, median" active={state.phase === "latency"} />
         <Small metric="loaded" value={formatMs(worst)} note={loaded.length ? `↓ ${formatMs(state.loadedDown)} · ↑ ${formatMs(state.loadedUp)}` : "Under load"} />

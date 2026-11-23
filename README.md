@@ -26,7 +26,7 @@ Node 20.9+. Set `NEXT_PUBLIC_SITE_URL=https://your-domain.com` in production (ca
 
 ## Weather and local time
 
-**Provider:** the official Google Weather API (Google Maps Platform) when `GOOGLE_WEATHER_API_KEY` is set, with Open-Meteo as the automatic fallback (no key needed). Google's own condition wording ("Mostly cloudy", "Light rain showers") is shown as-is; condition types map to the sky scene and icons, and every unit is read from the response. Air quality and place search always use Open-Meteo.
+**Provider:** [Open-Meteo](https://open-meteo.com/): free, open source, open data (CC BY 4.0), no key. Its *best match* automatically uses the highest-resolution national model for each location (e.g. ICON-D2, AROME, HRRR). A 15-minute precipitation nowcast for the next 2 hours sharpens the rain outlook ("Rain starting around 8:15 PM").
 
 Forecast + air quality fetched in parallel on the server and cached (10 / 30 min). The sky follows the live conditions: clear shows full sun, partly cloudy shows the sun with a few clouds, overcast shows a grey cloud deck, fog shows drifting mist, and drizzle, rain and snow fall with the reported intensity. Thunderstorms add lightning bolts. Cloud count comes from the real cloud-cover %. Colours follow the time of day at that place (dawn, day, dusk, night), and the sun and moon are drawn where they actually are, glowing through or hidden by cloud. The local clock ticks live from the place's IANA time zone (DST-correct) and shows how far ahead or behind you it is. Search any city; the choice is remembered in the browser. The hourly chart has Temperature, Precipitation and Wind tabs; pick any day in the 10-day list to chart its hours.
 
@@ -61,6 +61,7 @@ lib/                 theme (metric labels/colours/tones), svg (chart paths), spe
 ## Design system
 
 - **One metric config** (`lib/theme.ts`): label, icon and colours for download, upload, ping, loaded ping and jitter. The gauge, tiles, chart, progress steps, history and guide all read from it.
+- **Brand mark** (`lib/brand.ts`): one definition of the gauge logo. `<LogoMark>`, `app/icon.svg` (generated from `markSvg()`), the Apple icon, the PWA icons (`/pwa-icon/192|512|maskable`, rendered at build time) and the social card all use it. No hand-made PNGs.
 - **Dark only**: one token set at the top of `app/globals.css` (no theme toggle, no `next-themes`).
 - **Surfaces** are Tailwind 4 utilities in `app/globals.css`: `glass` (cards), `console` (dark gauge/chart panels), `tile` (on sky/console), `glass-soft`. Radius scale: `--radius-panel` and `--radius-tile`.
 - **`<Surface>` + `<SurfaceHeader>`** render every card the same way; `<SectionHeading>`, `<Chip>`, `<IconTile>` cover the repeated bits.
@@ -69,4 +70,4 @@ Brand copy: `lib/site.ts`. Colours: tokens at the top of `app/globals.css`.
 
 ## Environment
 
-See `.env.example`: `NEXT_PUBLIC_SITE_URL`, optional `IPAPI_KEY`, `VPN_CHECK=off` to skip VPN detection, optional `OPEN_METEO_API_KEY` for commercial use, optional `GOOGLE_WEATHER_API_KEY` to use Google Weather.
+See `.env.example`: `NEXT_PUBLIC_SITE_URL`, optional `IPAPI_KEY`, `VPN_CHECK=off` to skip VPN detection, optional `OPEN_METEO_API_KEY` for commercial use.

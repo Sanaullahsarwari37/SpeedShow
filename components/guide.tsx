@@ -1,4 +1,4 @@
-import { IconTile, SectionHeading } from "@/components/ui/primitives";
+import { IconTile, SectionIntro } from "@/components/ui/primitives";
 import { Surface } from "@/components/ui/surface";
 import { NEEDS } from "@/lib/rating";
 import { METRICS, type MetricKey } from "@/lib/theme";
@@ -8,10 +8,15 @@ const ORDER: MetricKey[] = ["download", "upload", "ping", "loaded", "jitter"];
 /** Server-rendered explainer: useful to people, indexable by search engines. */
 export function Guide() {
   return (
-    <section id="guide" aria-labelledby="guide-title" className="lazy-section scroll-mt-28">
-      <SectionHeading id="guide-title" title="Understand your" highlight="results" lede="Speed is only half the story. Ping decides how responsive your connection feels." />
+    <section id="guide" aria-labelledby="guide-title" className="lazy-section scroll-mt-24">
+      <SectionIntro
+        id="guide-title"
+        eyebrow="Guide"
+        title="Understand your results"
+        aside="Speed is only half the story. Ping decides how responsive your connection feels."
+      />
 
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {ORDER.map((k) => {
           const m = METRICS[k];
           return (

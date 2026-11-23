@@ -12,7 +12,7 @@ import { LatencyTile, SpeedTile } from "@/components/speed/result-tiles";
 import { Button } from "@/components/ui/button";
 import { Chip, SectionIntro } from "@/components/ui/primitives";
 import { Surface } from "@/components/ui/surface";
-import { WeatherMini, type Units } from "@/components/weather/weather-mini";
+import type { Units } from "@/components/weather/weather-card";
 import { WeatherCardSkeleton } from "@/components/weather/weather-skeleton";
 import { useThroughputSeries } from "@/hooks/use-live";
 import { useNetworkInfo, useWeather } from "@/hooks/use-queries";
@@ -173,7 +173,7 @@ export function SpeedTest() {
       ) : null}
 
       {/* ───────────── Bento: test ───────────── */}
-      <section id="test" aria-label="Internet speed test" className="rise-in grid scroll-mt-28 gap-4 sm:gap-5 lg:grid-cols-12" style={cssVars({ "--d": "0.05s" })}>
+      <section id="test" aria-label="Internet speed test" className="rise-in grid scroll-mt-28 grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-12" style={cssVars({ "--d": "0.05s" })}>
         <Surface as="div" variant="console" className="flex flex-col justify-center p-4 sm:p-6 lg:col-span-7 lg:row-span-3">
           <Steps phase={phase} />
           <SpeedGauge mbps={target} phase={phase} latency={state.latency} className="mt-1" />
@@ -210,7 +210,7 @@ export function SpeedTest() {
         <div className="lg:col-span-5">
           <LatencyTile state={state} />
         </div>
-        <Surface as="div" variant="console" pad="md" className="flex flex-col justify-center lg:col-span-5">
+        <Surface as="div" variant="console" className="lg:col-span-5">
           <LiveChart series={series} live={live} />
         </Surface>
 
@@ -238,37 +238,29 @@ export function SpeedTest() {
         </Surface>
       </section>
 
-      {/* ───────────── Bento: at a glance ───────────── */}
-      <section aria-label="Weather, connection and history" className="reveal grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
-        <WeatherMini data={weather.data} isLoading={(!place && network.isPending) || weather.isLoading} placeLabel={placeLabel} units={units} />
-        <NetworkCard data={network.data} isLoading={network.isPending} isError={network.isError} isFetching={network.isFetching} onRetry={retryNetwork} />
-        <div className="flex md:col-span-2 lg:col-span-1 [&>*]:flex-1">
+      {/* ───────────── Weather & local time ───────────── */}
+      <WeatherCard
+        data={weather.data}
+        isLoading={(!place && network.isPending) || weather.isLoading}
+        isError={weather.isError}
+        isFetching={weather.isFetching}
+        placeLabel={placeLabel}
+        hasLocation={hasLocation}
+        custom={place !== null}
+        onSelectPlace={setPlace}
+        onRetry={retryWeather}
+        units={units}
+        onUnits={setUnits}
+      />
+
+      {/* ───────────── Network & history ───────────── */}
+      <section aria-labelledby="network-title" className="reveal pt-10 sm:pt-14">
+        <SectionIntro id="network-title" eyebrow="Network" title="Your connection & test history" />
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+          <NetworkCard data={network.data} isLoading={network.isPending} isError={network.isError} isFetching={network.isFetching} onRetry={retryNetwork} />
           <HistoryCard items={history} ready={historyReady} onClear={clearHistory} />
         </div>
       </section>
-
-      {/* ───────────── Full weather & local time ───────────── */}
-      <div id="weather" className="reveal scroll-mt-24 pt-10 sm:pt-14">
-        <SectionIntro
-          id="weather-title"
-          eyebrow="Weather"
-          title="Forecast & local time"
-          aside={weather.data ? `Data: ${weather.data.source === "google" ? "Google Weather" : "Open-Meteo"}` : undefined}
-        />
-        <WeatherCard
-          data={weather.data}
-          isLoading={(!place && network.isPending) || weather.isLoading}
-          isError={weather.isError}
-          isFetching={weather.isFetching}
-          placeLabel={placeLabel}
-          hasLocation={hasLocation}
-          custom={place !== null}
-          onSelectPlace={setPlace}
-          onRetry={retryWeather}
-          units={units}
-          onUnits={setUnits}
-        />
-      </div>
     </div>
   );
 }

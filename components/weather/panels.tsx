@@ -1,7 +1,7 @@
-import { Sunrise, Sunset } from "lucide-react";
+import { Sun as SunIcon, Sunrise, Sunset } from "lucide-react";
 
 import { MoonGlyph } from "@/components/weather/sky";
-import { SKY_LABEL } from "@/components/weather/styles";
+import { Surface, SurfaceHeader } from "@/components/ui/surface";
 import type { SunState } from "@/components/weather/use-sun";
 import { formatClock, formatMinutes } from "@/lib/format";
 
@@ -12,13 +12,11 @@ export function SunMoon({ s }: { s: SunState }) {
   const x = f != null ? 120 - 100 * Math.cos(Math.PI * f) : null;
   const y = f != null ? 105 - 100 * Math.sin(Math.PI * f) : null;
   return (
-    <div className="tile p-4">
-      <div className="flex items-center justify-between">
-        <h3 className={SKY_LABEL}>Sun &amp; moon</h3>
-        <span className="text-xs text-white/75 tabular-nums">{s.next}</span>
-      </div>
+    <Surface as="div" className="h-full">
+      <SurfaceHeader icon={SunIcon} title="Sun & moon" actions={<span className="pr-2 text-xs text-muted-foreground tabular-nums">{s.next}</span>} />
+      <div className="p-5 sm:px-6">
       {!s.polar ? (
-        <svg viewBox="0 0 240 118" className="mt-2 w-full" role="img" aria-label={`Sunrise ${formatClock(s.rise)}, sunset ${formatClock(s.set)}. ${s.next}.`}>
+        <svg viewBox="0 0 240 118" className="mx-auto mt-1 max-h-40 w-full" role="img" aria-label={`Sunrise ${formatClock(s.rise)}, sunset ${formatClock(s.set)}. ${s.next}.`}>
           <defs>
             <linearGradient id="sp-grad" x1="0" x2="1">
               <stop offset="0%" stopColor="#fbbf24" />
@@ -58,6 +56,7 @@ export function SunMoon({ s }: { s: SunState }) {
           <span className="block text-xs text-white/70">{Math.round(s.moon.illumination * 100)}% illuminated</span>
         </p>
       </div>
-    </div>
+      </div>
+    </Surface>
   );
 }

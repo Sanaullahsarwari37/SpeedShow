@@ -1,9 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Check, Clock, Copy, Eye, EyeOff, Globe2, MapPin, Network, RefreshCw, Server, type LucideIcon } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Globe2, MapPin, Network, RefreshCw, Server, type LucideIcon } from "lucide-react";
 
-import { LocalTimeInline } from "@/components/local-time";
 import { Button } from "@/components/ui/button";
 import { Chip, IconTile, Skeleton } from "@/components/ui/primitives";
 import { Surface, SurfaceHeader } from "@/components/ui/surface";
@@ -42,8 +41,7 @@ export const NetworkCard = React.memo(function NetworkCard({ data, isLoading, is
         id="connection-title"
         icon={Network}
         title="Your connection"
-        description="What any website can see about you."
-        divided
+        description="What any website can see about you"
         actions={
           <>
             <Button variant="ghost" size="icon-sm" aria-label={hidden ? "Show IP address" : "Hide IP address"} onClick={() => setHidden((v) => !v)}>
@@ -58,7 +56,7 @@ export const NetworkCard = React.memo(function NetworkCard({ data, isLoading, is
       <div className="px-5 py-5 sm:px-6">
         {isLoading ? (
           <div className="space-y-5" aria-busy="true">
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2].map((i) => (
               <div key={i} className="flex items-center gap-3">
                 <Skeleton className="size-9 rounded-xl" />
                 <div className="flex-1 space-y-2">
@@ -96,10 +94,6 @@ export const NetworkCard = React.memo(function NetworkCard({ data, isLoading, is
                 {flagEmoji(data.countryCode)}
               </span>
               {joinParts([data.city, data.region, data.country]) || "Unknown"}
-            </Row>
-            <Row icon={Clock} label="Local time">
-              <LocalTimeInline tz={data.timezone} />
-              {data.timezone ? <span className="block text-xs font-normal text-muted-foreground">{data.timezone.replace(/_/g, " ")}</span> : null}
             </Row>
           </dl>
         )}

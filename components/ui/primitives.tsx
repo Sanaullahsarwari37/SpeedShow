@@ -23,18 +23,6 @@ export function IconTile({ icon: Icon, className, iconClassName }: { icon: Lucid
   );
 }
 
-/** Centered section title with one gradient phrase and a short lede. */
-export function SectionHeading({ id, title, highlight, lede }: { id: string; title: string; highlight: string; lede: string }) {
-  return (
-    <div className="mx-auto mb-10 max-w-2xl text-center">
-      <h2 id={id} className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl lg:text-4xl">
-        {title} <span className="text-gradient">{highlight}</span>
-      </h2>
-      <p className="mt-3 text-sm text-pretty text-muted-foreground sm:text-base">{lede}</p>
-    </div>
-  );
-}
-
 /** Left-aligned section intro: eyebrow, title and an optional note on the right. */
 export function SectionIntro({ id, eyebrow, title, aside }: { id: string; eyebrow: string; title: string; aside?: React.ReactNode }) {
   return (

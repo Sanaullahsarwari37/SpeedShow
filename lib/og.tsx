@@ -1,10 +1,21 @@
 import { ImageResponse } from "next/og";
 
+import { markSvg } from "@/lib/brand";
+import { siteConfig } from "@/lib/site";
+
 /** Shared social card for Open Graph and Twitter (one design, one source). */
 export const ogSize = { width: 1200, height: 630 };
 
+const CHIPS = [
+  { label: "Download", color: "#22d3ee" },
+  { label: "Upload", color: "#a78bfa" },
+  { label: "Ping", color: "#34d399" },
+  { label: "Bufferbloat", color: "#fbbf24" },
+  { label: "Weather", color: "#93c5fd" },
+];
 
 export function renderOgImage() {
+  const mark = `data:image/svg+xml,${encodeURIComponent(markSvg())}`;
   return new ImageResponse(
     (
       <div
@@ -13,27 +24,47 @@ export function renderOgImage() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
+          justifyContent: "space-between",
           padding: 80,
-          color: "white",
-          background:
-            "radial-gradient(circle at 15% 20%, rgba(56,189,248,0.4), transparent 45%), radial-gradient(circle at 90% 80%, rgba(124,58,237,0.45), transparent 45%), radial-gradient(circle at 70% 10%, rgba(99,102,241,0.5), transparent 40%), #050716",
+          color: "#fafafa",
+          background: "radial-gradient(ellipse 900px 420px at 50% -80px, rgba(255,255,255,0.09), transparent 70%), #09090b",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <div style={{ width: 96, height: 96, borderRadius: 28, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg, #38bdf8, #4f46e5 55%, #7c3aed)" }}>
-            <svg width="60" height="60" viewBox="0 0 64 64">
-              <path d="M10 44a22 22 0 1 1 44 0" fill="none" stroke="white" strokeOpacity="0.45" strokeWidth="6" strokeLinecap="round" />
-              <path d="M10 44a22 22 0 0 1 28-21" fill="none" stroke="white" strokeWidth="6" strokeLinecap="round" />
-              <path d="M32 44l13-17" stroke="white" strokeWidth="5.5" strokeLinecap="round" />
-              <circle cx="32" cy="44" r="5.5" fill="white" />
-            </svg>
+        <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={mark} width={84} height={84} alt="" />
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 40, fontWeight: 600, letterSpacing: -1 }}>{siteConfig.name}</div>
+            <div style={{ fontSize: 22, color: "#a1a1aa", display: "flex" }}>{`by ${siteConfig.brand}`}</div>
           </div>
-          <div style={{ fontSize: 40, fontWeight: 600, opacity: 0.9, display: "flex" }}>SpeedShow</div>
         </div>
-        <div style={{ fontSize: 88, fontWeight: 700, lineHeight: 1.05, marginTop: 48, letterSpacing: -2, display: "flex" }}>Internet speed test</div>
-        <div style={{ fontSize: 36, marginTop: 24, opacity: 0.75, display: "flex" }}>Download · Upload · Ping · Local time · Weather</div>
-        <div style={{ fontSize: 30, marginTop: 56, display: "flex", color: "#a5b4fc" }}>Powered by TalkNest</div>
+
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ fontSize: 92, fontWeight: 700, lineHeight: 1.02, letterSpacing: -3, display: "flex" }}>Internet speed test,</div>
+          <div style={{ fontSize: 92, fontWeight: 700, lineHeight: 1.02, letterSpacing: -3, color: "#a1a1aa", display: "flex" }}>instantly.</div>
+        </div>
+
+        <div style={{ display: "flex", gap: 14 }}>
+          {CHIPS.map((c) => (
+            <div
+              key={c.label}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "12px 22px",
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.04)",
+                fontSize: 26,
+                color: "#e4e4e7",
+              }}
+            >
+              <div style={{ width: 12, height: 12, borderRadius: 999, background: c.color }} />
+              {c.label}
+            </div>
+          ))}
+        </div>
       </div>
     ),
     ogSize,

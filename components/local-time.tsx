@@ -21,23 +21,6 @@ export function useLocalTime(tz: string | null | undefined) {
   };
 }
 
-/** Compact live clock, e.g. "5:54 PM · GMT+4:30". */
-export function LocalTimeInline({ tz, className }: { tz: string | null | undefined; className?: string }) {
-  const t = useLocalTime(tz);
-  return (
-    <span className={cn("tabular-nums", className)}>
-      {t ? (
-        <>
-          <time dateTime={t.date.toISOString()}>{t.time}</time>
-          <span className="text-muted-foreground"> · {t.offset}</span>
-        </>
-      ) : (
-        <span className="text-muted-foreground">--:--</span>
-      )}
-    </span>
-  );
-}
-
 /** Large live clock block used in the weather card. */
 export function LocalClock({ tz, className }: { tz: string; className?: string }) {
   const t = useLocalTime(tz);
