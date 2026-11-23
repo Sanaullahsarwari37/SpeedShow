@@ -8,10 +8,11 @@ import { HistoryCard } from "@/components/history-card";
 import { NetworkCard } from "@/components/network-card";
 import { SpeedGauge } from "@/components/speed/gauge";
 import { LiveChart } from "@/components/speed/live-chart";
-import { StatTiles } from "@/components/speed/stat-tiles";
+import { LatencyTile, SpeedTile } from "@/components/speed/result-tiles";
 import { Button } from "@/components/ui/button";
 import { Chip, SectionIntro } from "@/components/ui/primitives";
 import { Surface } from "@/components/ui/surface";
+import { WeatherMini, type Units } from "@/components/weather/weather-mini";
 import { WeatherCardSkeleton } from "@/components/weather/weather-skeleton";
 import { useThroughputSeries } from "@/hooks/use-live";
 import { useNetworkInfo, useWeather } from "@/hooks/use-queries";
@@ -41,6 +42,7 @@ const isPlace = (x: unknown): x is GeoPlace | null => {
   const p = x as Record<string, unknown>;
   return typeof p.name === "string" && typeof p.latitude === "number" && typeof p.longitude === "number" && Math.abs(p.latitude) <= 90 && Math.abs(p.longitude) <= 180;
 };
+const isUnits = (v: unknown): v is Units => v === "c" || v === "f";
 const isHistory = (x: unknown): x is SpeedResult[] =>
   Array.isArray(x) && x.every((r) => r && typeof r === "object" && typeof r.id === "string" && typeof r.at === "number");
 
@@ -90,6 +92,7 @@ export function SpeedTest() {
   const network = useNetworkInfo();
   const [place, setPlace] = useStoredState<GeoPlace | null>("speedshow:weather-place", null, isPlace);
   const [history, setHistory, historyReady] = useStoredState<SpeedResult[]>("speedshow:history:v2", [], isHistory);
+  const [units, setUnits] = useStoredState<Units>("speedshow:units", "c", isUnits);
   const [shared, flashShared] = useFlash(1800);
 
   const lat = place ? place.latitude : network.data?.latitude;
@@ -158,8 +161,7 @@ export function SpeedTest() {
   }[phase];
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      {/* ───────────── Speed test ───────────── */}
+    <div className="space-y-4 sm:space-y-5">
       {network.data?.vpn.detected ? (
         <p role="status" className="glass-soft flex items-start gap-3 rounded-[var(--radius-tile)] px-4 py-3 text-sm text-muted-foreground sm:items-center">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber-500 sm:mt-0" aria-hidden="true" />
@@ -170,17 +172,9 @@ export function SpeedTest() {
         </p>
       ) : null}
 
-      <section id="test" aria-label="Internet speed test" className="rise-in grid scroll-mt-28 items-stretch gap-4 sm:gap-5 lg:grid-cols-12" style={cssVars({ "--d": "0.1s" })}>
-        <Surface as="div" variant="console" className="flex flex-col justify-center p-4 sm:p-6 lg:order-2 lg:col-span-7">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(22rem 18rem at 0% 0%, rgba(6,182,212,0.1), transparent 70%), radial-gradient(22rem 18rem at 100% 100%, rgba(124,58,237,0.12), transparent 70%)",
-            }}
-          />
-
+      {/* ───────────── Bento: test ───────────── */}
+      <section id="test" aria-label="Internet speed test" className="rise-in grid scroll-mt-28 gap-4 sm:gap-5 lg:grid-cols-12" style={cssVars({ "--d": "0.05s" })}>
+        <Surface as="div" variant="console" className="flex flex-col justify-center p-4 sm:p-6 lg:col-span-7 lg:row-span-3">
           <Steps phase={phase} />
           <SpeedGauge mbps={target} phase={phase} latency={state.latency} className="mt-1" />
 
@@ -210,39 +204,55 @@ export function SpeedTest() {
           </p>
         </Surface>
 
-        <div className="flex flex-col gap-4 sm:gap-5 lg:order-1 lg:col-span-5">
-          <StatTiles state={state} />
-          <Surface as="div" variant="console" pad="md" className="flex flex-1 flex-col justify-center">
-            <LiveChart series={series} live={live} />
-          </Surface>
-          <Surface as="div" variant={rating ? "glass" : "soft"} className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
-            {rating && result ? (
-              <>
-                <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-2.5">
-                  <Chip tone={TIER_TONE[rating.tier]} icon={Zap}>
-                    {rating.label}
-                  </Chip>
-                  <p className="min-w-0 text-sm text-pretty text-muted-foreground">{rating.blurb}</p>
-                </div>
+        <div className="lg:col-span-5">
+          <SpeedTile state={state} />
+        </div>
+        <div className="lg:col-span-5">
+          <LatencyTile state={state} />
+        </div>
+        <Surface as="div" variant="console" pad="md" className="flex flex-col justify-center lg:col-span-5">
+          <LiveChart series={series} live={live} />
+        </Surface>
+
+        <Surface as="div" variant={rating ? "glass" : "soft"} className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5 lg:col-span-12">
+          {rating && result ? (
+            <>
+              <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                <Chip tone={TIER_TONE[rating.tier]} icon={Zap}>
+                  {rating.label}
+                </Chip>
+                <p className="min-w-0 text-sm text-pretty text-muted-foreground">{rating.blurb}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="hidden text-xs text-muted-foreground md:inline">via {result.server}</span>
                 <Button size="sm" onClick={share}>
-                  {shared ? <Check /> : <Share2 />} {shared ? "Copied" : "Share"}
+                  {shared ? <Check /> : <Share2 />} {shared ? "Copied" : "Share result"}
                 </Button>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {running ? "Testing… results are saved only in this browser." : "Tip: pause other downloads and streams for the most accurate result."}
-              </p>
-            )}
-          </Surface>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {running ? "Testing… results are saved only in this browser." : "Tip: pause other downloads and streams for the most accurate result."}
+            </p>
+          )}
+        </Surface>
+      </section>
+
+      {/* ───────────── Bento: at a glance ───────────── */}
+      <section aria-label="Weather, connection and history" className="reveal grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <WeatherMini data={weather.data} isLoading={(!place && network.isPending) || weather.isLoading} placeLabel={placeLabel} units={units} />
+        <NetworkCard data={network.data} isLoading={network.isPending} isError={network.isError} isFetching={network.isFetching} onRetry={retryNetwork} />
+        <div className="flex md:col-span-2 lg:col-span-1 [&>*]:flex-1">
+          <HistoryCard items={history} ready={historyReady} onClear={clearHistory} />
         </div>
       </section>
 
-      {/* ───────────── Weather & local time ───────────── */}
+      {/* ───────────── Full weather & local time ───────────── */}
       <div id="weather" className="reveal scroll-mt-24 pt-10 sm:pt-14">
         <SectionIntro
           id="weather-title"
           eyebrow="Weather"
-          title="Live weather & local time"
+          title="Forecast & local time"
           aside={weather.data ? `Data: ${weather.data.source === "google" ? "Google Weather" : "Open-Meteo"}` : undefined}
         />
         <WeatherCard
@@ -255,16 +265,9 @@ export function SpeedTest() {
           custom={place !== null}
           onSelectPlace={setPlace}
           onRetry={retryWeather}
+          units={units}
+          onUnits={setUnits}
         />
-      </div>
-
-      {/* ───────────── Connection & history ───────────── */}
-      <div className="reveal pt-10 sm:pt-14">
-        <SectionIntro id="network-title" eyebrow="Network" title="Your connection & test history" />
-        <div className="grid gap-5 sm:gap-6 lg:grid-cols-2">
-          <NetworkCard data={network.data} isLoading={network.isPending} isError={network.isError} isFetching={network.isFetching} onRetry={retryNetwork} />
-          <HistoryCard items={history} ready={historyReady} onClear={clearHistory} />
-        </div>
       </div>
     </div>
   );

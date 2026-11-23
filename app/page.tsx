@@ -12,20 +12,20 @@ export default function HomePage() {
     <>
       <HomeJsonLd />
       <Header />
-      <main id="main" className="mx-auto w-full max-w-6xl px-4 pt-12 sm:px-6 sm:pt-16 lg:max-w-7xl lg:pt-20">
-        <header className="rise-in mx-auto mb-10 max-w-2xl text-center sm:mb-12">
-          <p className="glass-soft mx-auto mb-5 inline-flex items-center gap-2 rounded-full px-3.5 py-1 text-[0.7rem] font-medium tracking-wide text-muted-foreground">
+      <main id="main" className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6 sm:pt-12 lg:max-w-7xl lg:pt-14">
+        <header className="rise-in mb-7 flex flex-col items-center text-center sm:mb-9">
+          <p className="glass-soft mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[0.7rem] font-medium text-muted-foreground">
             <span className="relative flex size-1.5">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-50" />
               <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
             </span>
             Free · No ads · Private · Cloudflare network
           </p>
-          <h1 className="text-[2.35rem] font-semibold tracking-tight text-balance sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]">
-            How fast is <span className="text-gradient">your internet?</span>
+          <h1 className="text-[2rem] font-semibold tracking-tight text-balance sm:text-[2.75rem] sm:leading-[1.1]">
+            Internet speed test<span className="text-gradient">, instantly.</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-pretty text-muted-foreground sm:text-[0.95rem]">
-            Your download speed starts measuring instantly. Upload, ping and bufferbloat follow, plus your IP, local time and live weather.
+          <p className="mt-3 max-w-lg text-sm text-pretty text-muted-foreground sm:text-[0.95rem]">
+            Download starts the moment you arrive. Upload, ping, bufferbloat grade, your IP, local time and live weather follow.
           </p>
         </header>
 

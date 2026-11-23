@@ -16,33 +16,32 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
   /* Radius scale: panel → tile → control */
-  --radius-panel: 1.75rem;
-  --radius-tile: 1.125rem;
+  --radius-panel: 1.25rem;
+  --radius-tile: 0.875rem;
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ---------- Tokens (one modern dark theme) ---------- */
+/* ---------- Tokens: clean solid dark (one accent, colour only where it carries data) ---------- */
 :root {
-  --background: #06070b;
-  --foreground: #eceef5;
-  --primary: #8b93ff;
-  --primary-foreground: #06070b;
-  --muted: rgba(255, 255, 255, 0.04);
-  --muted-foreground: #8d92a8;
-  --accent: rgba(139, 147, 255, 0.1);
-  --border: rgba(255, 255, 255, 0.075);
-  --ring: #8b93ff;
-  --glass-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.018) 100%);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 30px 60px -30px rgba(0, 0, 0, 0.9), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
-  --blur: 20px;
+  --background: #09090b;
+  --foreground: #fafafa;
+  --primary: #818cf8;
+  --primary-foreground: #09090b;
+  --muted: rgba(255, 255, 255, 0.035);
+  --muted-foreground: #a1a1aa;
+  --accent: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.08);
+  --ring: #818cf8;
+  --surface: #111113;
+  --surface-2: #0d0d10;
+  --blur: 16px;
   color-scheme: dark;
 }
 
 /* Phones: lighter blur keeps scrolling at 60 fps on mid-range GPUs. */
 @media (max-width: 640px) {
   :root {
-    --blur: 12px;
+    --blur: 10px;
   }
 }
 
@@ -68,7 +67,7 @@
     font-feature-settings: "ss01", "cv11";
   }
   ::selection {
-    background: color-mix(in oklab, #3b82f6 38%, transparent);
+    background: color-mix(in oklab, #818cf8 40%, transparent);
   }
   :focus-visible {
     outline: 2px solid var(--ring);
@@ -77,20 +76,19 @@
 }
 
 /* ---------- Surfaces (utilities, so variants like sm:/hover: work) ---------- */
-/* Cards sit on a near-solid dark backdrop, so they need no (costly) backdrop blur. */
+/* Card: solid surface, hairline border, a 1px top highlight. No blur, no glow. */
 @utility glass {
   position: relative;
-  background: var(--glass-bg), #0b0c12;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 /* Frosted bar for content scrolling underneath (sticky header only). */
 @utility frosted {
-  background: rgba(11, 12, 18, 0.72);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
-  backdrop-filter: blur(var(--blur)) saturate(160%);
+  background: rgba(9, 9, 11, 0.78);
+  border: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
+  backdrop-filter: blur(var(--blur)) saturate(150%);
 }
 /* Skip layout and paint for off-screen sections until they scroll near. */
 @utility lazy-section {
@@ -101,38 +99,35 @@
   background: var(--muted);
   border: 1px solid var(--border);
 }
-/* Deep instrument panel (gauge, chart) */
+/* Instrument panel (gauge, chart): same card, a shade deeper. */
 @utility console {
-  color: #eceef5;
-  background:
-    radial-gradient(120% 80% at 50% 0%, rgba(99, 102, 241, 0.1), transparent 60%),
-    linear-gradient(180deg, #0e1018 0%, #090a10 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 40px 80px -40px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(0, 0, 0, 0.4);
+  color: #fafafa;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 /* Translucent tile on a sky / console background */
 @utility tile {
   border-radius: var(--radius-tile);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.07);
 }
+/* Quiet headline emphasis: white fading to zinc. */
 @utility text-gradient {
-  background: linear-gradient(100deg, #67e8f9 0%, #818cf8 45%, #c084fc 100%);
+  background: linear-gradient(180deg, #ffffff 20%, #a1a1aa 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
+/* Primary action: solid white. */
 @utility btn-liquid {
   position: relative;
-  color: #fff;
-  background: linear-gradient(120deg, #0891b2 0%, #4f46e5 45%, #7c3aed 80%, #a21caf 100%);
-  background-size: 200% 200%;
-  background-position: 0% 50%;
-  box-shadow: 0 14px 40px -10px rgba(79, 70, 229, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.2) inset, 0 1.5px 0 rgba(255, 255, 255, 0.4) inset;
-  transition: background-position 0.6s var(--ease-out-expo), box-shadow 0.3s ease, transform 0.15s ease;
+  color: #09090b;
+  background: #fafafa;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transition: background-color 0.2s ease, transform 0.15s ease;
   &:hover {
-    background-position: 100% 50%;
-    box-shadow: 0 20px 52px -8px rgba(99, 102, 241, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.3) inset, 0 1.5px 0 rgba(255, 255, 255, 0.5) inset;
+    background: #e4e4e7;
   }
 }
 @utility no-scrollbar {

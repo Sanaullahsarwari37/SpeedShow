@@ -1,4 +1,5 @@
 import type { SpeedMetrics } from "@/lib/types";
+import type { Tone } from "@/lib/theme";
 
 export type Tier = "slow" | "fair" | "good" | "great" | "excellent";
 
@@ -39,3 +40,18 @@ export const NEEDS = [
   { activity: "Online gaming", down: "5–10 Mbps", up: "2–3 Mbps", ping: "Under 50 ms" },
   { activity: "Live streaming in 1080p", down: "5 Mbps", up: "6–10 Mbps", ping: "Under 100 ms" },
 ] as const;
+
+/**
+ * Bufferbloat grade from how much latency rises under load (loaded − idle),
+ * using the common A+…F bands (as popularised by the Waveform test).
+ */
+export function bufferbloatGrade(idle: number | null, loaded: number | null): { grade: string; tone: Tone } | null {
+  if (idle == null || loaded == null) return null;
+  const rise = Math.max(0, loaded - idle);
+  if (rise < 5) return { grade: "A+", tone: "success" };
+  if (rise < 30) return { grade: "A", tone: "success" };
+  if (rise < 60) return { grade: "B", tone: "info" };
+  if (rise < 200) return { grade: "C", tone: "warning" };
+  if (rise < 400) return { grade: "D", tone: "danger" };
+  return { grade: "F", tone: "danger" };
+}

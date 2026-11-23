@@ -87,7 +87,7 @@ export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency,
 
   return (
     <div className={cn("relative mx-auto aspect-square w-full max-w-[20rem]", className)}>
-      <div aria-hidden="true" className="absolute -inset-[4%] rounded-full opacity-70" style={{ background: `radial-gradient(circle, ${s.glow}55 0%, ${s.glow}1f 38%, transparent 66%)` }} />
+      <div aria-hidden="true" className="absolute -inset-[4%] rounded-full opacity-40" style={{ background: `radial-gradient(circle, ${s.glow}55 0%, ${s.glow}1f 38%, transparent 66%)` }} />
       {active ? <div aria-hidden="true" className="pulse-ring absolute inset-[15%] rounded-full border" style={{ borderColor: `${s.glow}77` }} /> : null}
 
       <svg viewBox="0 0 400 400" className="relative size-full overflow-visible" aria-hidden="true">
@@ -101,9 +101,9 @@ export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency,
             <stop offset="100%" stopColor={s.to} stopOpacity="0.9" />
           </linearGradient>
           <radialGradient id={`${id}o`} cx="50%" cy="30%" r="80%">
-            <stop offset="0%" stopColor="#1c2036" />
-            <stop offset="55%" stopColor="#0e1020" />
-            <stop offset="100%" stopColor="#06070d" />
+            <stop offset="0%" stopColor="#1f1f25" />
+            <stop offset="55%" stopColor="#131317" />
+            <stop offset="100%" stopColor="#0a0a0c" />
           </radialGradient>
           <clipPath id={`${id}c`}>
             <circle cx={CX} cy={CY} r={ORB_R - 2} />

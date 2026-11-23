@@ -14,14 +14,12 @@ import { SKY_CONTROL } from "@/components/weather/styles";
 import { useSunState } from "@/components/weather/use-sun";
 import { WeatherBodySkeleton } from "@/components/weather/weather-skeleton";
 import { WeatherIcon } from "@/components/weather/weather-icon";
-import { useStoredState } from "@/hooks/use-stored";
+import type { Units } from "@/components/weather/weather-mini";
 import { cToF, formatClock, isoMinutes, kmhToMph, windDirection } from "@/lib/format";
 import type { GeoPlace, WeatherData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { describeWeather, precipOutlook, skyColors } from "@/lib/weather";
 
-type Units = "c" | "f";
-const isUnits = (v: unknown): v is Units => v === "c" || v === "f";
 
 interface Props {
   data: WeatherData | undefined;
@@ -33,6 +31,8 @@ interface Props {
   custom: boolean;
   onSelectPlace: (p: GeoPlace | null) => void;
   onRetry: () => void;
+  units: Units;
+  onUnits: (u: Units) => void;
 }
 
 /** "Tuesday, 25 November" from "2026-11-25". */
@@ -43,8 +43,7 @@ function dayTitle(iso: string | undefined) {
 }
 
 /** Weather + live local time for the detected or searched place, on a sky that matches the real time of day. */
-export default function WeatherCard({ data, isLoading, isError, isFetching, placeLabel, hasLocation, custom, onSelectPlace, onRetry }: Props) {
-  const [units, setUnits] = useStoredState<Units>("speedshow:units", "c", isUnits);
+export default function WeatherCard({ data, isLoading, isError, isFetching, placeLabel, hasLocation, custom, onSelectPlace, onRetry, units, onUnits: setUnits }: Props) {
   const s = useSunState(data);
 
   const fmt = React.useMemo<UnitFormat>(
@@ -86,7 +85,7 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
   return (
     <section
       aria-labelledby="weather-title"
-      className="relative isolate flex min-h-[28rem] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-white/10 text-white shadow-[0_24px_64px_-24px_rgba(30,41,130,0.5)] sm:min-h-[32rem]"
+      className="relative isolate flex min-h-[28rem] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-white/10 text-white shadow-[0_24px_64px_-32px_rgba(0,0,0,0.9)] sm:min-h-[32rem]"
       style={{ background: `linear-gradient(150deg, ${c1} 0%, ${c2} 55%, ${c3} 100%)` }}
     >
       {data && desc && s ? <Sky kind={desc.kind} part={s.part} sun={s.sun} night={s.night} moon={s.moon.fraction} cover={data.current.cloudCover} intensity={desc.intensity} /> : null}
