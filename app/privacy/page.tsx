@@ -8,7 +8,7 @@ import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const dynamic = "force-static";
 
-const description = `How ${siteConfig.name} handles your data: no accounts, no ads, no tracking, and test history kept only in your browser.`;
+const description = `How ${siteConfig.name} handles your data: no accounts, no ads, no tracking, and no test results stored anywhere.`;
 
 export const metadata: Metadata = {
   title: "Privacy",
@@ -32,7 +32,7 @@ const SECTIONS = [
   },
   {
     h: "What stays on your device",
-    p: "Your recent tests, the city you picked for weather, your temperature unit and theme are saved in your browser's local storage. Clear them any time with the Clear button or your browser settings.",
+    p: "Only the city you picked for weather and your temperature unit are saved, in your browser's local storage. Test results are not stored at all. Clear these any time in your browser settings.",
   },
   {
     h: "What we don't do",

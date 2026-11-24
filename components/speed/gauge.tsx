@@ -150,7 +150,8 @@ export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency,
         <circle cx={CX} cy={CY} r={ORB_R} fill="none" stroke="#fff" strokeOpacity="0.14" strokeWidth="1.5" />
       </svg>
 
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-white" aria-hidden="true">
+      {/* Re-keyed per stage so the readout glides in on each switch (download → ping → upload). */}
+      <div key={phase} className="swap-in pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-white" aria-hidden="true">
         <span className="text-[0.7rem] font-semibold tracking-[0.18em] uppercase opacity-75 sm:text-xs">{s.label}</span>
         <span className="font-mono text-[2.5rem] leading-tight font-semibold tracking-tight tabular-nums [text-shadow:0_2px_24px_rgba(0,0,0,0.6)] sm:text-5xl">{value}</span>
         <span className="text-sm font-medium tracking-wide opacity-85">{unit}</span>

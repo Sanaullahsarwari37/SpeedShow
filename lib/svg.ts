@@ -1,4 +1,4 @@
-/** Shared SVG chart helpers (used by the live chart, history sparkline and hourly curve). */
+/** Shared SVG chart helpers (used by the live chart and the hourly forecast). */
 
 export type Point = readonly [number, number];
 

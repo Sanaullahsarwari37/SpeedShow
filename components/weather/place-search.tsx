@@ -97,6 +97,7 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
           <ul
             id={listId}
             role="listbox"
+            data-lenis-prevent=""
             aria-label="Matching places"
             className="absolute inset-x-0 top-12 z-30 max-h-80 overflow-auto rounded-2xl border border-white/15 bg-[#0b0c12] p-1.5 text-white shadow-2xl"
           >

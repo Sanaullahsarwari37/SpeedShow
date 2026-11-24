@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Activity, Droplets, Eye, Gauge, Leaf, Navigation, Sun, Thermometer, Umbrella, type LucideIcon } from "lucide-react";
+import { Activity, Cloud, Droplets, Eye, Gauge, Leaf, Navigation, Sun, Umbrella, type LucideIcon } from "lucide-react";
 
 import { Surface, SurfaceHeader } from "@/components/ui/surface";
 import type { SunState } from "@/components/weather/use-sun";
@@ -91,7 +91,7 @@ export function Instruments({ data, sun, t, wind }: { data: WeatherData; sun: Su
       value: data.air ? `${Math.round(data.air.usAqi)} AQI` : "—",
       note: data.air ? aqiLevel(data.air.usAqi) : "Not available",
     },
-    { label: "Feels like", dial: <Disc icon={Thermometer} iconClass="text-rose-200" />, value: t(c.feelsLike), note: `Cloud cover ${Math.round(c.cloudCover)}%` },
+    { label: "Cloud cover", dial: <Ring value={c.cloudCover} color="#cbd5e1" icon={Cloud} iconClass="text-slate-200" />, value: `${Math.round(c.cloudCover)}%`, note: c.cloudCover >= 85 ? "Overcast" : c.cloudCover >= 50 ? "Mostly cloudy" : c.cloudCover >= 20 ? "Partly cloudy" : "Clear" },
     { label: "Visibility", dial: <Disc icon={Eye} iconClass="text-sky-200" />, value: c.visibilityM != null ? visibilityLabel(c.visibilityM) : "—" },
     {
       label: "Pressure",

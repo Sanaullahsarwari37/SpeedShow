@@ -42,7 +42,26 @@ export function useSunState(data: WeatherData | undefined) {
         next = `Sunrise in ${formatMinutes(minutes < rise ? rise - minutes : 1440 - minutes + (nextRise ?? rise))}`;
       }
     }
-    return { part, sun, night, rise, set, polar, isUp, next, daylight: polar ? null : set - rise, moon: moonPhase(now ?? Date.now()), today };
+    const tomorrow: WeatherDay | undefined = data.daily[idx + 1];
+    const tRise = isoMinutes(tomorrow?.sunrise);
+    const tSet = isoMinutes(tomorrow?.sunset);
+    return {
+      part,
+      sun,
+      night,
+      rise,
+      set,
+      polar,
+      isUp,
+      next,
+      daylight: polar ? null : set - rise,
+      /** Tomorrow's daylight minus today's, minutes (null when unknown). */
+      daylightChange: !polar && tRise != null && tSet != null && tSet > tRise ? tSet - tRise - (set - rise) : null,
+      /** Minutes since local midnight at the place. */
+      minutes,
+      moon: moonPhase(now ?? Date.now()),
+      today,
+    };
   }, [data, now]);
 }
 

@@ -36,6 +36,33 @@ interface Props {
   onUnits: (u: Units) => void;
 }
 
+/** Next 2 hours of rain in 15-minute bars (only shown when some is expected). */
+function Nowcast({ quarters }: { quarters: WeatherData["nowcast"] }) {
+  const max = Math.max(0, ...quarters.map((q) => q.precip));
+  if (quarters.length < 2 || max < 0.05) return null;
+  const scale = Math.max(0.2, max);
+  const clock = (iso: string) => formatClock(isoMinutes(iso));
+  return (
+    <figure className="mt-4 max-w-xs">
+      <figcaption className="mb-1.5 text-[0.7rem] font-semibold tracking-wide text-white/75 uppercase">Next 2 hours</figcaption>
+      <div className="flex h-9 items-end gap-1" role="img" aria-label={`Rain over the next 2 hours, up to ${max.toFixed(1)} mm per 15 minutes`}>
+        {quarters.map((q) => (
+          <span
+            key={q.time}
+            title={`${clock(q.time)}: ${q.precip.toFixed(1)} mm`}
+            className="grow-y flex-1 rounded-sm bg-sky-200"
+            style={{ height: `${q.precip > 0.05 ? Math.max(18, (q.precip / scale) * 100) : 6}%`, opacity: q.precip > 0.05 ? 0.9 : 0.25 }}
+          />
+        ))}
+      </div>
+      <div className="mt-1 flex justify-between text-[0.68rem] text-white/70 tabular-nums">
+        <span>{clock(quarters[0].time)}</span>
+        <span>{clock(quarters[quarters.length - 1].time)}</span>
+      </div>
+    </figure>
+  );
+}
+
 /** "Tuesday, 25 November" from "2026-11-25". */
 function dayTitle(iso: string | undefined) {
   const [y, m, d] = (iso ?? "").split("-").map(Number);
@@ -87,10 +114,13 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
   const c = data?.current;
 
   return (
-    <section id="weather" aria-labelledby="weather-title" className="reveal scroll-mt-24 pt-10 sm:pt-14">
-      <div className="mb-4 flex flex-col gap-3 px-1 sm:mb-5 lg:flex-row lg:items-end lg:justify-between">
+    <section id="weather" aria-labelledby="weather-title" className="scroll-mt-24 pt-10 sm:pt-14">
+      <div data-reveal="" className="mb-4 flex flex-col gap-3 px-1 sm:mb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-[0.7rem] font-semibold tracking-[0.16em] text-primary uppercase">Weather</p>
+          <p className="flex items-center gap-2 text-[0.7rem] font-semibold tracking-[0.16em] text-primary uppercase">
+          <span aria-hidden="true" className="h-px w-6 bg-gradient-to-r from-cyan-400 to-violet-400" />
+          Weather
+          </p>
           <h2 id="weather-title" className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">
             Forecast &amp; local time
           </h2>
@@ -129,7 +159,7 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
         </div>
       ) : (
         <>
-          <div className="rise-in grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-12">
+          <div data-reveal="stagger" className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-12">
             {/* Now: the one card with the live sky */}
             <div
               className="relative isolate flex min-h-[26rem] flex-col overflow-hidden rounded-[var(--radius-panel)] border border-white/10 p-5 text-white sm:p-6 lg:col-span-5 lg:row-span-2"
@@ -158,6 +188,7 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
                     {outlook}
                   </p>
                 ) : null}
+                <Nowcast quarters={data.nowcast ?? []} />
               </div>
               <LocalClock tz={data.timezone} className="tile relative z-10 mt-auto px-4 py-3" />
             </div>

@@ -132,7 +132,7 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
   }, [hours]);
 
   if (hours.length < 2) return null;
-  const legend = tab === "temp" ? units.tempUnit : tab === "precip" ? "chance of rain" : units.windUnit;
+  const legend = tab === "precip" ? "Chance of rain" : tab === "wind" ? `Wind speed, ${units.windUnit}` : undefined;
 
   return (
     <Surface as="div" className="h-full">
@@ -192,6 +192,12 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
                 <span className={cn("text-[0.7rem] tabular-nums", isToday && i === 0 ? "font-semibold text-white" : "text-white/65")}>
                   {isToday && i === 0 ? "Now" : hourLabel(h.time)}
                 </span>
+                {tab !== "precip" ? (
+                  <span className={cn("flex h-3.5 items-center gap-0.5 text-[0.62rem] tabular-nums", h.precipProb >= 20 ? "text-sky-300" : "text-transparent")}>
+                    <Droplet className="size-2.5" aria-hidden="true" />
+                    {Math.round(h.precipProb)}%
+                  </span>
+                ) : null}
               </li>
             ))}
           </ol>

@@ -4,8 +4,12 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Phase } from "@/lib/speedtest";
 
+/** Time constant of the easing: ~63 % of the way to the target in this many ms. */
+const EASE_MS = 110;
+
 /**
- * Eases a displayed number towards its target on animation frames.
+ * Eases a displayed number towards its target with frame-rate-independent
+ * exponential smoothing (identical feel on 60 Hz and 120 Hz screens).
  * Use it in the leaf component that shows the number, so only that
  * component re-renders each frame (not the whole page).
  */
@@ -14,14 +18,17 @@ export function useEased(target: number) {
   const cur = useRef(target);
   useEffect(() => {
     let raf = 0;
-    const step = () => {
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = Math.min(64, now - last);
+      last = now;
       const d = target - cur.current;
       if (Math.abs(d) <= Math.max(0.0005, Math.abs(target) * 0.002)) {
         cur.current = target;
         setValue(target);
         return;
       }
-      cur.current += d * 0.15;
+      cur.current += d * (1 - Math.exp(-dt / EASE_MS));
       setValue(cur.current);
       raf = requestAnimationFrame(step);
     };

@@ -4,7 +4,6 @@ import * as React from "react";
 import dynamic from "next/dynamic";
 import { Check, Play, RotateCcw, Share2, ShieldCheck, Square, X, Zap } from "lucide-react";
 
-import { HistoryCard } from "@/components/history-card";
 import { NetworkCard } from "@/components/network-card";
 import { SpeedGauge } from "@/components/speed/gauge";
 import { LiveChart } from "@/components/speed/live-chart";
@@ -23,7 +22,7 @@ import { formatMs, speedLabel } from "@/lib/format";
 import { rateConnection } from "@/lib/rating";
 import { PHASE_ORDER, preloadEngine, type Phase } from "@/lib/speedtest";
 import { METRICS, TIER_TONE } from "@/lib/theme";
-import type { GeoPlace, SpeedResult } from "@/lib/types";
+import type { GeoPlace } from "@/lib/types";
 import { cn, copyText, cssVars, joinParts } from "@/lib/utils";
 
 /** Weather sits below the test: its code loads after the test is interactive. */
@@ -43,8 +42,6 @@ const isPlace = (x: unknown): x is GeoPlace | null => {
   return typeof p.name === "string" && typeof p.latitude === "number" && typeof p.longitude === "number" && Math.abs(p.latitude) <= 90 && Math.abs(p.longitude) <= 180;
 };
 const isUnits = (v: unknown): v is Units => v === "c" || v === "f";
-const isHistory = (x: unknown): x is SpeedResult[] =>
-  Array.isArray(x) && x.every((r) => r && typeof r === "object" && typeof r.id === "string" && typeof r.at === "number");
 
 /* ----------------------------- pieces ----------------------------- */
 
@@ -91,7 +88,6 @@ function Steps({ phase }: { phase: Phase }) {
 export function SpeedTest() {
   const network = useNetworkInfo();
   const [place, setPlace] = useStoredState<GeoPlace | null>("speedshow:weather-place", null, isPlace);
-  const [history, setHistory, historyReady] = useStoredState<SpeedResult[]>("speedshow:history:v2", [], isHistory);
   const [units, setUnits] = useStoredState<Units>("speedshow:units", "c", isUnits);
   const [shared, flashShared] = useFlash(1800);
 
@@ -101,7 +97,6 @@ export function SpeedTest() {
   const weather = useWeather(lat, lon);
 
   const { state, start, stop } = useSpeedTest({
-    onComplete: (r) => setHistory((prev) => [r, ...prev].slice(0, 20)),
     getMeta: () => ({ ip: network.data?.ip, isp: network.data?.isp ?? undefined }),
   });
   const { phase, running, result } = state;
@@ -130,7 +125,14 @@ export function SpeedTest() {
   const refetchWeather = weather.refetch;
   const retryNetwork = React.useCallback(() => void refetchNetwork(), [refetchNetwork]);
   const retryWeather = React.useCallback(() => void (hasLocation ? refetchWeather() : refetchNetwork()), [hasLocation, refetchWeather, refetchNetwork]);
-  const clearHistory = React.useCallback(() => setHistory([]), [setHistory]);
+  // Earlier versions kept a test history in this browser; the feature is gone, so clear what's left.
+  React.useEffect(() => {
+    try {
+      localStorage.removeItem("speedshow:history:v2");
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
 
   const rating = result ? rateConnection(result) : null;
   const placeLabel = place
@@ -163,18 +165,22 @@ export function SpeedTest() {
   return (
     <div className="space-y-4 sm:space-y-5">
       {network.data?.vpn.detected ? (
-        <p role="status" className="glass-soft flex items-start gap-3 rounded-[var(--radius-tile)] px-4 py-3 text-sm text-muted-foreground sm:items-center">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-amber-500 sm:mt-0" aria-hidden="true" />
-          <span>
-            <span className="font-medium text-foreground">VPN or proxy detected.</span> The test works normally, but it measures your connection through
-            the VPN server, which can be slower than your own line.
-          </span>
+        <p role="status" className="rise-in mx-auto flex w-fit items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/[0.06] px-3 py-1 text-xs text-amber-200/90">
+          <ShieldCheck className="size-3.5 shrink-0" aria-hidden="true" />
+          VPN detected: results measure the VPN server, not your own line.
         </p>
       ) : null}
 
       {/* ───────────── Bento: test ───────────── */}
-      <section id="test" aria-label="Internet speed test" className="rise-in grid scroll-mt-28 grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-12" style={cssVars({ "--d": "0.05s" })}>
-        <Surface as="div" variant="console" className="flex flex-col justify-center p-4 sm:p-6 lg:col-span-7 lg:row-span-3">
+      <section id="test" aria-label="Internet speed test" className="grid scroll-mt-28 grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-12">
+        <Surface
+          as="div"
+          variant="console"
+          data-running={running}
+          data-done={phase === "done"}
+          className="beam rise-in flex flex-col justify-center p-4 sm:p-6 lg:col-span-7 lg:row-span-3"
+          style={cssVars({ "--d": "0.08s" })}
+        >
           <Steps phase={phase} />
           <SpeedGauge mbps={target} phase={phase} latency={state.latency} className="mt-1" />
 
@@ -204,19 +210,18 @@ export function SpeedTest() {
           </p>
         </Surface>
 
-        <div className="lg:col-span-5">
+        <div className="rise-in lg:col-span-5" style={cssVars({ "--d": "0.16s" })}>
           <SpeedTile state={state} />
         </div>
-        <div className="lg:col-span-5">
+        <div className="rise-in lg:col-span-5" style={cssVars({ "--d": "0.24s" })}>
           <LatencyTile state={state} />
         </div>
-        <Surface as="div" variant="console" className="lg:col-span-5">
+        <Surface as="div" variant="console" className="rise-in lg:col-span-5" style={cssVars({ "--d": "0.32s" })}>
           <LiveChart series={series} live={live} />
         </Surface>
 
-        <Surface as="div" variant={rating ? "glass" : "soft"} className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5 lg:col-span-12">
-          {rating && result ? (
-            <>
+        {rating && result ? (
+          <Surface as="div" className="rise-in flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5 lg:col-span-12">
               <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3">
                 <Chip tone={TIER_TONE[rating.tier]} icon={Zap}>
                   {rating.label}
@@ -229,13 +234,8 @@ export function SpeedTest() {
                   {shared ? <Check /> : <Share2 />} {shared ? "Copied" : "Share result"}
                 </Button>
               </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {running ? "Testing… results are saved only in this browser." : "Tip: pause other downloads and streams for the most accurate result."}
-            </p>
-          )}
-        </Surface>
+            </Surface>
+        ) : null}
       </section>
 
       {/* ───────────── Weather & local time ───────────── */}
@@ -253,12 +253,11 @@ export function SpeedTest() {
         onUnits={setUnits}
       />
 
-      {/* ───────────── Network & history ───────────── */}
-      <section aria-labelledby="network-title" className="reveal pt-10 sm:pt-14">
-        <SectionIntro id="network-title" eyebrow="Network" title="Your connection & test history" />
-        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+      {/* ───────────── Connection ───────────── */}
+      <section aria-labelledby="network-title" className="pt-10 sm:pt-14">
+        <SectionIntro id="network-title" eyebrow="Network" title="Your connection" />
+        <div data-reveal="stagger" className="grid grid-cols-1">
           <NetworkCard data={network.data} isLoading={network.isPending} isError={network.isError} isFetching={network.isFetching} onRetry={retryNetwork} />
-          <HistoryCard items={history} ready={historyReady} onClear={clearHistory} />
         </div>
       </section>
     </div>

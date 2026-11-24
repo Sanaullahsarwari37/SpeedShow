@@ -1,61 +1,165 @@
-import { Sun as SunIcon, Sunrise, Sunset } from "lucide-react";
+import { Sun as SunIcon } from "lucide-react";
 
-import { MoonGlyph } from "@/components/weather/sky";
 import { Surface, SurfaceHeader } from "@/components/ui/surface";
+import { MoonGlyph } from "@/components/weather/sky";
 import type { SunState } from "@/components/weather/use-sun";
+import { useSvgId } from "@/hooks/use-ui";
 import { formatClock, formatMinutes } from "@/lib/format";
+import { uvLevel } from "@/lib/weather";
 
-/* ---------------- Sun & moon ---------------- */
+/* ------------------------------------------------------------------ */
+/* 24-hour sun path                                                    */
+/* ------------------------------------------------------------------ */
+
+const W = 360;
+const H = 150;
+const HY = 96; // horizon
+const AMP = 70; // peak height above the horizon
+const BELOW = 30; // deepest dip below the horizon (midnight)
+const DAY = 1440;
+
+/**
+ * Sun height through the day as a cosine centred on solar noon, scaled so it
+ * crosses the horizon exactly at sunrise and sunset (1 = noon peak, < 0 = below).
+ */
+function elevation(t: number, noon: number, daylight: number) {
+  const c0 = Math.cos((Math.PI * daylight) / DAY);
+  return (Math.cos((2 * Math.PI * (t - noon)) / DAY) - c0) / (1 - c0);
+}
+
+function SunPath({ s }: { s: SunState }) {
+  const id = useSvgId("sp");
+  if (s.rise == null || s.set == null || s.daylight == null) return null;
+  const noon = (s.rise + s.set) / 2;
+  // Above the horizon scale to AMP; below it, scale the night dip so its lowest point is BELOW deep.
+  const floor = Math.abs(elevation(noon + DAY / 2, noon, s.daylight)) || 1;
+  const y = (t: number) => {
+    const e = elevation(t, noon, s.daylight!);
+    return e >= 0 ? HY - e * AMP : HY - (e / floor) * BELOW;
+  };
+  const x = (t: number) => (t / DAY) * W;
+  const pts: [number, number][] = [];
+  for (let t = 0; t <= DAY; t += 10) pts.push([x(t), y(t)]);
+  const line = pts.map(([px, py], i) => `${i ? "L" : "M"}${px.toFixed(1)} ${py.toFixed(1)}`).join("");
+  const area = `${line}L${W} ${HY}L0 ${HY}Z`;
+  const now = s.minutes;
+  const sx = x(now);
+  const sy = y(now);
+  const up = sy < HY;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`Sun path today. Sunrise ${formatClock(s.rise)}, sunset ${formatClock(s.set)}. ${s.next}.`}>
+      <defs>
+        <clipPath id={`${id}a`}>
+          <rect x="0" y="0" width={W} height={HY} />
+        </clipPath>
+        <clipPath id={`${id}p`}>
+          <rect x="0" y="0" width={sx} height={H} />
+        </clipPath>
+        <linearGradient id={`${id}g`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fbbf24" stopOpacity="0.3" />
+          <stop offset="1" stopColor="#fbbf24" stopOpacity="0" />
+        </linearGradient>
+        <radialGradient id={`${id}s`}>
+          <stop offset="0" stopColor="#fde68a" stopOpacity="0.6" />
+          <stop offset="1" stopColor="#fde68a" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      {/* Daylight area above the horizon */}
+      <path d={area} fill={`url(#${id}g)`} clipPath={`url(#${id}a)`} />
+      {/* Whole day (future), then the elapsed part brighter */}
+      <path d={line} fill="none" stroke="#fff" strokeOpacity="0.22" strokeWidth="1.5" strokeDasharray="3 4" />
+      <path d={line} fill="none" stroke="#fbbf24" strokeWidth="2.25" strokeLinecap="round" clipPath={`url(#${id}p)`} />
+
+      {/* Horizon + sunrise / sunset ticks */}
+      <line x1="0" x2={W} y1={HY} y2={HY} stroke="#fff" strokeOpacity="0.25" />
+      {[s.rise, s.set].map((t, i) => (
+        <g key={t}>
+          <circle cx={x(t)} cy={HY} r="2.5" fill="#111113" stroke="#fff" strokeOpacity="0.6" />
+          {/* Outside the arc: sunrise label to its left, sunset to its right */}
+          <text x={x(t) + (i ? 7 : -7)} y={HY - 7} textAnchor={i ? "start" : "end"} fontSize="10" fill="#d4d4d8">
+            {formatClock(t)}
+          </text>
+        </g>
+      ))}
+      {/* Time axis */}
+      {[0, 360, 720, 1080, 1440].map((t) => (
+        <text key={t} x={Math.min(W - 2, Math.max(2, x(t)))} y={H - 2} textAnchor={t === 0 ? "start" : t === 1440 ? "end" : "middle"} fontSize="9" fill="#71717a">
+          {formatClock(t % DAY, { minute: undefined })}
+        </text>
+      ))}
+
+      {/* Now */}
+      <line x1={sx} x2={sx} y1="8" y2={HY} stroke="#fff" strokeOpacity="0.08" />
+      {up ? <circle cx={sx} cy={sy} r="16" fill={`url(#${id}s)`} /> : null}
+      <circle cx={sx} cy={sy} r={up ? 5.5 : 4} fill={up ? "#fde68a" : "#111113"} stroke={up ? "none" : "#a1a1aa"} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Panel                                                               */
+/* ------------------------------------------------------------------ */
+
+function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="min-w-0 bg-[var(--surface)] px-4 py-3.5 sm:px-5">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-lg font-semibold tracking-tight tabular-nums">{value}</dd>
+      {note ? <dd className="truncate text-xs text-muted-foreground">{note}</dd> : null}
+    </div>
+  );
+}
+
+const days = (d: number) => (d < 1 ? "tonight" : `in ${Math.round(d)} day${Math.round(d) === 1 ? "" : "s"}`);
 
 export function SunMoon({ s }: { s: SunState }) {
-  const f = s.sun;
-  const x = f != null ? 120 - 100 * Math.cos(Math.PI * f) : null;
-  const y = f != null ? 105 - 100 * Math.sin(Math.PI * f) : null;
+  const change = s.daylightChange;
+  const uv = s.today?.uvMax ?? null;
+  const noon = s.rise != null && s.set != null ? (s.rise + s.set) / 2 : null;
+
   return (
     <Surface as="div" className="h-full">
       <SurfaceHeader icon={SunIcon} title="Sun & moon" actions={<span className="pr-2 text-xs text-muted-foreground tabular-nums">{s.next}</span>} />
-      <div className="p-5 sm:px-6">
-      {!s.polar ? (
-        <svg viewBox="0 0 240 118" className="mx-auto mt-1 max-h-40 w-full" role="img" aria-label={`Sunrise ${formatClock(s.rise)}, sunset ${formatClock(s.set)}. ${s.next}.`}>
-          <defs>
-            <linearGradient id="sp-grad" x1="0" x2="1">
-              <stop offset="0%" stopColor="#fbbf24" />
-              <stop offset="100%" stopColor="#fde68a" />
-            </linearGradient>
-            <radialGradient id="sp-glow">
-              <stop offset="0%" stopColor="#fde68a" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          <line x1="10" y1="105" x2="230" y2="105" stroke="white" strokeOpacity="0.25" strokeWidth="1.5" />
-          <path d="M20 105 A100 100 0 0 1 220 105" fill="none" stroke="white" strokeOpacity="0.3" strokeWidth="2" strokeDasharray="4 6" strokeLinecap="round" />
-          {x != null && y != null ? (
-            <>
-              <path d={`M20 105 A100 100 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}`} fill="none" stroke="url(#sp-grad)" strokeWidth="3.5" strokeLinecap="round" />
-              <circle cx={x} cy={y} r="22" fill="url(#sp-glow)" />
-              <circle cx={x} cy={y} r="9" fill="#fde68a" />
-            </>
-          ) : null}
-        </svg>
-      ) : null}
-      <div className="mt-1.5 flex items-center justify-between text-xs">
-        <span className="flex items-center gap-1.5 font-medium">
-          <Sunrise className="size-3.5 text-amber-200" aria-hidden="true" />
-          {formatClock(s.rise)}
+
+      {s.polar ? (
+        <p className="px-5 py-8 text-center text-sm text-muted-foreground sm:px-6">{s.isUp ? "Polar day: the sun stays up all day." : "Polar night: the sun stays down all day."}</p>
+      ) : (
+        <div className="px-4 pt-4 pb-2 sm:px-5">
+          <SunPath s={s} />
+        </div>
+      )}
+
+      <dl className="grid grid-cols-2 gap-px border-y border-border bg-border">
+        <Stat
+          label="Daylight"
+          value={s.daylight != null ? formatMinutes(s.daylight) : "—"}
+          note={change != null && Math.round(change) !== 0 ? `${change > 0 ? "+" : "−"}${formatMinutes(Math.abs(change))} tomorrow` : change != null ? "Same tomorrow" : undefined}
+        />
+        <Stat label="Solar noon" value={formatClock(noon)} note="Sun at its highest" />
+        <Stat label="Golden hour" value={s.set != null ? formatClock(s.set - 60) : "—"} note="Soft light until sunset" />
+        <Stat label="UV peak" value={uv != null ? String(Math.round(uv)) : "—"} note={uv != null ? uvLevel(uv) : undefined} />
+      </dl>
+
+      <div className="flex items-center gap-4 px-4 py-4 sm:px-5">
+        <span className="relative grid size-14 shrink-0 place-items-center rounded-full border border-border bg-indigo-400/5">
+          <MoonGlyph fraction={s.moon.fraction} className="size-10" />
         </span>
-        <span className="text-white/70 tabular-nums">{s.daylight != null ? `${formatMinutes(s.daylight)} daylight` : ""}</span>
-        <span className="flex items-center gap-1.5 font-medium">
-          <Sunset className="size-3.5 text-orange-300" aria-hidden="true" />
-          {formatClock(s.set)}
-        </span>
-      </div>
-      <div className="mt-4 flex items-center gap-3 border-t border-white/10 pt-3">
-        <MoonGlyph fraction={s.moon.fraction} className="size-9" />
-        <p className="text-sm">
-          <span className="font-medium">{s.moon.name}</span>
-          <span className="block text-xs text-white/70">{Math.round(s.moon.illumination * 100)}% illuminated</span>
-        </p>
-      </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium">{s.moon.name}</p>
+          <p className="text-xs text-muted-foreground">{Math.round(s.moon.illumination * 100)}% illuminated</p>
+        </div>
+        <dl className="shrink-0 text-right text-xs text-muted-foreground">
+          <div>
+            <dt className="inline">Full moon </dt>
+            <dd className="inline font-medium text-foreground">{days(s.moon.toFull)}</dd>
+          </div>
+          <div className="mt-1">
+            <dt className="inline">New moon </dt>
+            <dd className="inline font-medium text-foreground">{days(s.moon.toNew)}</dd>
+          </div>
+        </dl>
       </div>
     </Surface>
   );

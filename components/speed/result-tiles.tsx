@@ -11,11 +11,11 @@ import { useEased } from "@/hooks/use-live";
 import { formatMs, formatSpeed } from "@/lib/format";
 import { bufferbloatGrade } from "@/lib/rating";
 import { METRICS, type MetricKey } from "@/lib/theme";
-import { cn } from "@/lib/utils";
+import { cn, cssVars } from "@/lib/utils";
 
 const LABEL = "flex items-center gap-1.5 text-xs font-medium text-muted-foreground";
 
-function Big({ metric, value, unit, note, active }: { metric: MetricKey; value: string; unit: string; note: string; active: boolean }) {
+function Big({ metric, value, unit, note, active }: { metric: MetricKey; value: string; unit: string; note?: string; active: boolean }) {
   const m = METRICS[metric];
   return (
     <div className="min-w-0 px-5 py-4 sm:px-6">
@@ -25,12 +25,15 @@ function Big({ metric, value, unit, note, active }: { metric: MetricKey; value: 
         {active ? <LiveDot className={cn("ml-0.5", m.text)} /> : null}
       </dt>
       <dd className="mt-2 flex items-baseline gap-1.5">
-        <span className={cn("font-mono text-4xl font-semibold tracking-tight tabular-nums transition-colors sm:text-[2.75rem]", active ? m.text : "text-foreground")}>
+        <span
+          className={cn("font-mono text-4xl font-semibold tracking-tight tabular-nums sm:text-[2.75rem]", value !== "—" ? "value-gradient" : "text-muted-foreground")}
+          style={cssVars({ "--from": m.from, "--to": m.to })}
+        >
           {value}
         </span>
         <span className="text-sm font-medium text-muted-foreground">{unit}</span>
       </dd>
-      <dd className="mt-1 truncate text-xs text-muted-foreground">{note}</dd>
+      <dd className="mt-1 h-4 truncate text-xs text-muted-foreground">{note}</dd>
     </div>
   );
 }
@@ -45,16 +48,16 @@ export const SpeedTile = React.memo(function SpeedTile({ state }: { state: TestS
   const u = formatSpeed(ul);
   return (
     <Surface as="div">
-      <SurfaceHeader icon={Gauge} title="Speed" actions={<span className="pr-2 text-xs text-muted-foreground">90th percentile</span>} />
+      <SurfaceHeader icon={Gauge} title="Speed" />
       <dl className="grid grid-cols-2 divide-x divide-border">
-        <Big metric="download" value={dl != null ? d.value : "—"} unit={d.unit} note={phase === "download" ? "Measuring…" : dl != null ? "Done" : "Waiting"} active={phase === "download"} />
-        <Big metric="upload" value={ul != null ? u.value : "—"} unit={u.unit} note={phase === "upload" ? "Measuring…" : ul != null ? "Done" : "After ping"} active={phase === "upload"} />
+        <Big metric="download" value={dl != null ? d.value : "—"} unit={d.unit} note={phase === "download" ? "Measuring…" : undefined} active={phase === "download"} />
+        <Big metric="upload" value={ul != null ? u.value : "—"} unit={u.unit} note={phase === "upload" ? "Measuring…" : undefined} active={phase === "upload"} />
       </dl>
     </Surface>
   );
 });
 
-function Small({ metric, value, note, active }: { metric: MetricKey; value: string; note: string; active?: boolean }) {
+function Small({ metric, value, note, active }: { metric: MetricKey; value: string; note?: string; active?: boolean }) {
   const m = METRICS[metric];
   return (
     <div className="min-w-0 px-5 py-4 sm:px-6">
@@ -67,7 +70,7 @@ function Small({ metric, value, note, active }: { metric: MetricKey; value: stri
         <span className="font-mono text-2xl font-semibold tracking-tight tabular-nums">{value}</span>
         <span className="text-xs text-muted-foreground">ms</span>
       </dd>
-      <dd className="mt-0.5 truncate text-[0.7rem] text-muted-foreground">{note}</dd>
+      <dd className="mt-0.5 h-4 truncate text-[0.7rem] text-muted-foreground">{note}</dd>
     </div>
   );
 }
@@ -88,14 +91,14 @@ export const LatencyTile = React.memo(function LatencyTile({ state }: { state: T
               Bufferbloat {grade.grade}
             </Chip>
           ) : (
-            <span className="pr-2 text-xs text-muted-foreground">Bufferbloat grade at the end</span>
+            <span className="pr-2 text-xs text-muted-foreground/70">Grade after the test</span>
           )
         }
       />
       <dl className="grid grid-cols-3 divide-x divide-border">
-        <Small metric="ping" value={formatMs(state.latency)} note="Idle, median" active={state.phase === "latency"} />
-        <Small metric="loaded" value={formatMs(worst)} note={loaded.length ? `↓ ${formatMs(state.loadedDown)} · ↑ ${formatMs(state.loadedUp)}` : "Under load"} />
-        <Small metric="jitter" value={formatMs(state.jitter)} note="Variation" />
+        <Small metric="ping" value={formatMs(state.latency)} active={state.phase === "latency"} />
+        <Small metric="loaded" value={formatMs(worst)} note={loaded.length ? `↓ ${formatMs(state.loadedDown)} · ↑ ${formatMs(state.loadedUp)}` : undefined} />
+        <Small metric="jitter" value={formatMs(state.jitter)} />
       </dl>
     </Surface>
   );

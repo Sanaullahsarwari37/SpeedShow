@@ -39,6 +39,13 @@ Forecast + air quality fetched in parallel on the server and cached (10 / 30 min
 - Glass blur is lighter on phones and the animated background blobs only run on tablets/desktops (the main mobile GPU cost before). One shared 1 s ticker for all clocks.
 - Server: VPN check runs in parallel with the ISP lookup; per-IP results cached for 10 minutes.
 
+## Motion & scrolling
+
+- **Smooth scrolling:** `components/smooth-scroll.tsx` runs [Lenis](https://github.com/darkroomengineering/lenis) for inertial wheel scrolling and eased in-page jumps (offset for the sticky header). Touch devices keep native scrolling; "reduce motion" turns smoothing off. Nested scrollers opt out with `data-lenis-prevent`.
+- **Scroll reveals:** add `data-reveal` (one block) or `data-reveal="stagger"` (children follow one by one). `components/reveal-observer.tsx` uses one IntersectionObserver and picks up late content. Content is only hidden once JS runs, so it stays visible without JS and to search engines.
+- **Entrance & live numbers:** the test section builds in stages (`rise-in` with `--d` delays); the gauge readout glides in on each stage switch; numbers ease with frame-rate-independent smoothing; a hairline in the header tracks scroll progress (CSS scroll timeline).
+- All motion is off with `prefers-reduced-motion`.
+
 ## SEO
 
 Metadata API (title ≈60 chars, description ≈155), canonical URLs, Open Graph + Twitter images, `sitemap.ts`, `robots.ts`, manifest, JSON-LD (Organization, WebSite, WebApplication, BreadcrumbList on /privacy), server-rendered guide content, semantic headings, `next/font` via Geist.
@@ -51,7 +58,7 @@ components/
   ui/                button, surface (+ header), primitives (chip, icon tile, section heading, live dot, skeleton)
   speed/             speed-test (orchestrator), gauge, stat-tiles, live-chart
   weather/           weather-card, sky, instruments, panels (hourly, sun & moon, 7-day), place-search, use-sun
-  network-card, history-card, local-time, guide, header, footer
+  network-card, local-time, guide, header, footer
 hooks/               use-speed-test, use-live (eased value + chart samples), use-now (shared tickers),
                      use-stored (localStorage state), use-queries, use-ui (svg ids, copy feedback)
 lib/                 theme (metric labels/colours/tones), svg (chart paths), speedtest engine,
@@ -60,7 +67,7 @@ lib/                 theme (metric labels/colours/tones), svg (chart paths), spe
 
 ## Design system
 
-- **One metric config** (`lib/theme.ts`): label, icon and colours for download, upload, ping, loaded ping and jitter. The gauge, tiles, chart, progress steps, history and guide all read from it.
+- **One metric config** (`lib/theme.ts`): label, icon and colours for download, upload, ping, loaded ping and jitter. The gauge, tiles, chart, progress steps and guide all read from it.
 - **Brand mark** (`lib/brand.ts`): one definition of the gauge logo. `<LogoMark>`, `app/icon.svg` (generated from `markSvg()`), the Apple icon, the PWA icons (`/pwa-icon/192|512|maskable`, rendered at build time) and the social card all use it. No hand-made PNGs.
 - **Dark only**: one token set at the top of `app/globals.css` (no theme toggle, no `next-themes`).
 - **Surfaces** are Tailwind 4 utilities in `app/globals.css`: `glass` (cards), `console` (dark gauge/chart panels), `tile` (on sky/console), `glass-soft`. Radius scale: `--radius-panel` and `--radius-tile`.

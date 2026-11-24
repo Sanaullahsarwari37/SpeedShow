@@ -40,6 +40,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  // Don't generate AGENTS.md (AI-assistant notes) in the project on `next dev` / `next build`.
+  agentRules: false,
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

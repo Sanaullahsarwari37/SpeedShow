@@ -3,7 +3,10 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
 import { LiquidBackground } from "@/components/liquid-background";
+import { PointerSpotlight } from "@/components/pointer-spotlight";
 import { Providers } from "@/components/providers";
+import { RevealObserver } from "@/components/reveal-observer";
+import { SmoothScroll } from "@/components/smooth-scroll";
 import { siteConfig } from "@/lib/site";
 
 import "./globals.css";
@@ -61,6 +64,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <Providers>
           <LiquidBackground />
+          <SmoothScroll />
+          <RevealObserver />
+          <PointerSpotlight />
           {children}
         </Providers>
       </body>

@@ -77,11 +77,28 @@
 
 /* ---------- Surfaces (utilities, so variants like sm:/hover: work) ---------- */
 /* Card: solid surface, hairline border, a 1px top highlight. No blur, no glow. */
+/* Cards: solid surface + cursor spotlight (--mx/--my set by components/pointer-spotlight.tsx) + light edge. */
 @utility glass {
   position: relative;
-  background: var(--surface);
+  background: radial-gradient(520px circle at var(--mx, -1000px) var(--my, -1000px), rgba(255, 255, 255, 0.055), transparent 42%), var(--surface);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -32px rgba(0, 0, 0, 0.9);
+  /* Light edge: a 1px highlight fading down from the top border. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 35%, transparent 70%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 }
 /* Frosted bar for content scrolling underneath (sticky header only). */
 @utility frosted {
@@ -101,10 +118,27 @@
 }
 /* Instrument panel (gauge, chart): same card, a shade deeper. */
 @utility console {
+  position: relative;
   color: #fafafa;
-  background: var(--surface-2);
+  background: radial-gradient(520px circle at var(--mx, -1000px) var(--my, -1000px), rgba(255, 255, 255, 0.055), transparent 42%), var(--surface-2);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -32px rgba(0, 0, 0, 0.9);
+  /* Light edge: a 1px highlight fading down from the top border. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 35%, transparent 70%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 }
 /* Translucent tile on a sky / console background */
 @utility tile {
@@ -169,7 +203,7 @@
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translate3d(0, 22px, 0) scale(0.985);
   }
 }
 @keyframes shimmer {
@@ -235,7 +269,7 @@
 }
 /* One orchestrated entrance for the hero block only */
 .rise-in {
-  animation: rise-in 0.8s var(--ease-out-expo) both;
+  animation: rise-in 0.9s var(--ease-out-expo) both;
   animation-delay: var(--d, 0s);
 }
 .star {
@@ -302,20 +336,140 @@
   animation-delay: var(--d, 0s);
 }
 
-/* Cards ease in as they scroll into view: pure CSS scroll timeline, no JS (browsers without support just show them). */
-@keyframes reveal {
+/* ---------- Scroll reveals (time-based; see components/reveal-observer.tsx) ---------- */
+.js-reveal [data-reveal]:not([data-reveal="stagger"]),
+.js-reveal [data-reveal="stagger"] > * {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0) scale(0.985);
+  transition:
+    opacity 0.9s var(--ease-out-expo),
+    transform 1.1s var(--ease-out-expo);
+  transition-delay: calc(var(--i, 0) * 80ms);
+}
+.js-reveal [data-reveal][data-shown]:not([data-reveal="stagger"]),
+.js-reveal [data-reveal="stagger"][data-shown] > * {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Smooth scrolling (Lenis) ---------- */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+html.lenis {
+  scroll-behavior: auto; /* Lenis eases; native smooth would fight it */
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* ---------- Gauge: label + value glide in when the stage changes ---------- */
+@keyframes swap-in {
   from {
     opacity: 0;
-    transform: translateY(28px) scale(0.985);
+    transform: translate3d(0, 0.35em, 0);
+    filter: blur(3px);
   }
 }
-@supports (animation-timeline: view()) {
-  .reveal {
-    animation: reveal linear both;
-    animation-timeline: view();
-    animation-range: entry 0% entry 30%;
+.swap-in {
+  animation: swap-in 0.55s var(--ease-out-expo) both;
+}
+
+/* ---------- Scroll progress hairline in the header ---------- */
+@keyframes progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
   }
 }
+.scroll-progress {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    animation: progress linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+/* ---------- Live beam: a light travelling around the gauge card while the test runs ---------- */
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes beam-spin {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+.beam::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(from var(--beam-angle), transparent 0 62%, #22d3ee 76%, #818cf8 86%, #c084fc 93%, transparent 100%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  animation: beam-spin 3.6s linear infinite;
+  animation-play-state: paused;
+}
+.beam[data-running="true"]::before {
+  opacity: 1;
+  animation-play-state: running;
+}
+/* One soft glow when a result lands. */
+@keyframes done-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 28px rgba(129, 140, 248, 0);
+  }
+}
+.beam[data-done="true"] {
+  animation: done-pulse 1.4s var(--ease-out-expo) 1;
+}
+
+/* Value text with the metric's own gradient. */
+.value-gradient {
+  background: linear-gradient(100deg, var(--from), var(--to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Cards respond to the pointer: a soft lift and a brighter edge. */
+.lift {
+  transition:
+    transform 0.4s var(--ease-out-expo),
+    border-color 0.3s ease;
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translate3d(0, -3px, 0);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+}
+
 .precip {
   position: absolute;
   inset: 0;
@@ -384,7 +538,8 @@
   .precip {
     display: none;
   }
-  .reveal {
-    animation: none !important;
+  .scroll-progress,
+  .beam::before {
+    display: none;
   }
 }

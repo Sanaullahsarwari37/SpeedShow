@@ -141,6 +141,9 @@ export function moonPhase(at: number) {
     fraction,
     name: MOON_NAMES[Math.floor(fraction * 8 + 0.5) % 8],
     illumination: (1 - Math.cos(2 * Math.PI * fraction)) / 2,
+    /** Days until the next full / new moon. */
+    toFull: ((0.5 - fraction + 1) % 1) * SYNODIC,
+    toNew: ((1 - fraction) % 1) * SYNODIC,
   };
 }
 

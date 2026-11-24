@@ -16,11 +16,11 @@ export function Guide() {
         aside="Speed is only half the story. Ping decides how responsive your connection feels."
       />
 
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <ul data-reveal="stagger" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {ORDER.map((k) => {
           const m = METRICS[k];
           return (
-            <Surface as="li" key={k} pad="md" className="reveal rounded-[var(--radius-tile)] transition-colors hover:border-white/15 last:sm:col-span-2 last:lg:col-span-1">
+            <Surface as="li" key={k} pad="md" className="lift rounded-[var(--radius-tile)] hover:border-white/15 last:sm:col-span-2 last:lg:col-span-1">
               <IconTile icon={m.icon} className="mb-3 size-10" iconClassName={`size-5 ${m.text}`} />
               <h3 className="font-semibold tracking-tight">{m.label}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-pretty text-muted-foreground">{m.help}</p>
@@ -29,7 +29,7 @@ export function Guide() {
         })}
       </ul>
 
-      <Surface as="div" className="reveal mt-5">
+      <Surface as="div" data-reveal="" className="mt-5">
         <div className="no-scrollbar overflow-x-auto">
           <table className="w-full min-w-[34rem] text-sm">
             <caption className="px-6 pt-5 text-left font-semibold">What speed do you need?</caption>
