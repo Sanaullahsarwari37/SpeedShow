@@ -55,7 +55,7 @@ function TempChart({ hours, t, id }: { hours: WeatherHour[]; t: UnitFormat["t"];
       {pts.map(([x, y], i) => (
         <g key={hours[i].time}>
           <circle cx={x} cy={y} r="3" fill="#fde68a" />
-          <text x={x} y={y - 9} textAnchor="middle" fontSize="12" fontWeight="600" fill="#fff">
+          <text x={x} y={y - 9} textAnchor="middle" fontSize="12" fontWeight="600" fill="currentColor">
             {t(hours[i].temp)}
           </text>
         </g>
@@ -73,7 +73,7 @@ function PrecipChart({ hours }: { hours: WeatherHour[] }) {
         return (
           <g key={h.time}>
             <title>{`${Math.round(h.precipProb)}% chance${h.precip > 0 ? `, ${h.precip.toFixed(1)} mm` : ""}`}</title>
-            <rect x={x - 11} y={TOP} width="22" height={BASE - TOP} rx="5" fill="#fff" fillOpacity="0.06" />
+            <rect x={x - 11} y={TOP} width="22" height={BASE - TOP} rx="5" fill="currentColor" fillOpacity="0.06" />
             <rect
               x={x - 11}
               y={BASE - height}
@@ -105,7 +105,7 @@ function WindChart({ hours, windValue }: { hours: WeatherHour[]; windValue: Unit
         return (
           <g key={h.time}>
             <title>{`${Math.round(windValue(h.windKmh))}, from ${windDirection(h.windDir)}`}</title>
-            <text x={x} y={TOP - 8} textAnchor="middle" fontSize="12" fontWeight="600" fill="#fff">
+            <text x={x} y={TOP - 8} textAnchor="middle" fontSize="12" fontWeight="600" fill="currentColor">
               {Math.round(windValue(h.windKmh))}
             </text>
             {/* Arrow points where the wind blows to (meteorological direction + 180°). */}
@@ -141,7 +141,7 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
         title={title}
         description={legend}
         actions={
-        <div role="tablist" aria-label="Hourly forecast view" className="mr-1 flex rounded-full border border-border bg-black/30 p-0.5">
+        <div role="tablist" aria-label="Hourly forecast view" className="mr-1 flex rounded-full border border-border bg-muted p-0.5">
           {TABS.map((x) => (
             <button
               key={x.id}
@@ -153,7 +153,7 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
               onClick={() => setTab(x.id)}
               className={cn(
                 "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                tab === x.id ? "bg-white text-zinc-900" : "text-muted-foreground hover:text-foreground",
+                tab === x.id ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground",
               )}
             >
               <x.icon className="size-3.5" aria-hidden="true" />
@@ -173,7 +173,7 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
         className="no-scrollbar snap-x snap-proximity overflow-x-auto overscroll-x-contain scroll-smooth px-4 pt-6 pb-3 scroll-px-4 [mask-image:linear-gradient(to_right,transparent,#000_16px,#000_calc(100%-16px),transparent)] sm:px-5"
       >
         <div style={{ width }} className="relative">
-          {isToday ? <div aria-hidden="true" className="absolute inset-y-0 left-0 rounded-xl bg-white/[0.07]" style={{ width: COL }} /> : null}
+          {isToday ? <div aria-hidden="true" className="absolute inset-y-0 left-0 rounded-xl bg-foreground/[0.06]" style={{ width: COL }} /> : null}
           <svg
             key={`${tab}-${hours[0]?.time}`}
             width={width}
@@ -188,12 +188,12 @@ export function HourlyForecast({ hours, title, isToday, units }: { hours: Weathe
           <ol className="relative flex">
             {hours.map((h, i) => (
               <li key={h.time} title={h.label} className="flex shrink-0 snap-start flex-col items-center gap-1.5 pt-2 pb-1" style={{ width: COL }}>
-                <WeatherIcon code={h.code} isDay={h.isDay} className="size-5 text-white/90" />
-                <span className={cn("text-[0.7rem] tabular-nums", isToday && i === 0 ? "font-semibold text-white" : "text-white/65")}>
+                <WeatherIcon code={h.code} isDay={h.isDay} className="size-5 text-foreground/85" />
+                <span className={cn("text-[0.7rem] tabular-nums", isToday && i === 0 ? "font-semibold text-foreground" : "text-muted-foreground")}>
                   {isToday && i === 0 ? "Now" : hourLabel(h.time)}
                 </span>
                 {tab !== "precip" ? (
-                  <span className={cn("flex h-3.5 items-center gap-0.5 text-[0.62rem] tabular-nums", h.precipProb >= 20 ? "text-sky-300" : "text-transparent")}>
+                  <span className={cn("flex h-3.5 items-center gap-0.5 text-[0.62rem] tabular-nums", h.precipProb >= 20 ? "text-sky-600 dark:text-sky-300" : "text-transparent")}>
                     <Droplet className="size-2.5" aria-hidden="true" />
                     {Math.round(h.precipProb)}%
                   </span>
@@ -249,17 +249,17 @@ export function DailyForecast({
               onClick={() => onSelect(i)}
               className={cn(
                 "grid w-full grid-cols-[3rem_1.5rem_2.75rem_2.1rem_1fr_2.1rem] items-center gap-2 rounded-xl px-2 py-2 text-left text-sm transition-colors sm:gap-2.5",
-                selected === i ? "bg-white/[0.08] ring-1 ring-white/10" : "hover:bg-white/[0.04]",
+                selected === i ? "bg-foreground/[0.06] ring-1 ring-border" : "hover:bg-foreground/[0.03]",
               )}
             >
               <span className="font-medium">{dayName(d.date, i)}</span>
-              <WeatherIcon code={d.code} className="size-5 text-white" />
-              <span className={cn("flex items-center gap-0.5 text-[0.7rem] tabular-nums", d.precipProb >= 20 ? "text-sky-200" : "text-transparent")}>
+              <WeatherIcon code={d.code} className="size-5 text-foreground/85" />
+              <span className={cn("flex items-center gap-0.5 text-[0.7rem] tabular-nums", d.precipProb >= 20 ? "text-sky-600 dark:text-sky-200" : "text-transparent")}>
                 <Droplet className="size-3" aria-hidden="true" />
                 {Math.round(d.precipProb)}%
               </span>
-              <span className="text-right text-white/65 tabular-nums">{units.t(d.min)}</span>
-              <span className="relative h-1.5 rounded-full bg-white/[0.06]" aria-hidden="true">
+              <span className="text-right text-muted-foreground tabular-nums">{units.t(d.min)}</span>
+              <span className="relative h-1.5 rounded-full bg-foreground/[0.08]" aria-hidden="true">
                 <span
                   className="grow-x absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-300 via-emerald-200 to-amber-300"
                   style={cssVars({ left: `${pos(d.min)}%`, width: `${Math.max(6, pos(d.max) - pos(d.min))}%`, "--d": `${i * 40}ms` })}

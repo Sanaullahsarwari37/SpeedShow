@@ -20,7 +20,7 @@ export function Guide() {
         {ORDER.map((k) => {
           const m = METRICS[k];
           return (
-            <Surface as="li" key={k} pad="md" className="lift rounded-[var(--radius-tile)] hover:border-white/15 last:sm:col-span-2 last:lg:col-span-1">
+            <Surface as="li" key={k} pad="md" className="lift rounded-[var(--radius-tile)] hover:border-foreground/15 last:sm:col-span-2 last:lg:col-span-1">
               <IconTile icon={m.icon} className="mb-3 size-10" iconClassName={`size-5 ${m.text}`} />
               <h3 className="font-semibold tracking-tight">{m.label}</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-pretty text-muted-foreground">{m.help}</p>

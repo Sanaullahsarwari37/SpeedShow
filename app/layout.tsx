@@ -3,10 +3,8 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
 import { LiquidBackground } from "@/components/liquid-background";
-import { PointerSpotlight } from "@/components/pointer-spotlight";
 import { Providers } from "@/components/providers";
-import { RevealObserver } from "@/components/reveal-observer";
-import { SmoothScroll } from "@/components/smooth-scroll";
+import { ScrollReveal } from "@/components/scroll-reveal";
 import { siteConfig } from "@/lib/site";
 
 import "./globals.css";
@@ -44,13 +42,16 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  colorScheme: "dark",
-  themeColor: siteConfig.themeColor,
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: siteConfig.themeColor.light },
+    { media: "(prefers-color-scheme: dark)", color: siteConfig.themeColor.dark },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" dir="ltr" className={`dark ${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" dir="ltr" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <head>
         {/* Warm up the connection to the test servers before the test starts. */}
         <link rel="preconnect" href="https://speed.cloudflare.com" crossOrigin="anonymous" />
@@ -64,9 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <Providers>
           <LiquidBackground />
-          <SmoothScroll />
-          <RevealObserver />
-          <PointerSpotlight />
+          <ScrollReveal />
           {children}
         </Providers>
       </body>

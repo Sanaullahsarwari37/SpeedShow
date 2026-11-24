@@ -11,6 +11,10 @@ export interface TestState extends SpeedMetrics {
   running: boolean;
   /** Latest throughput sample, Mbps. */
   live: number;
+  /** Ping (ms) measured right now while the line is busy; null outside download/upload. */
+  liveLoaded: number | null;
+  /** Data transferred by the test so far, bytes. */
+  bytes: number;
   server: string | null;
   error: string | null;
   result: SpeedResult | null;
@@ -20,6 +24,8 @@ const EMPTY: TestState = {
   phase: "idle",
   running: false,
   live: 0,
+  liveLoaded: null,
+  bytes: 0,
   download: null,
   upload: null,
   latency: null,
@@ -73,7 +79,7 @@ export function useSpeedTest({ onComplete, getMeta }: Options = {}) {
         r = await attempt();
       }
       const result: SpeedResult = { id: uid(), at: Date.now(), ...r, ...cbRef.current.getMeta?.() };
-      setState((s) => ({ ...s, ...r, phase: "done", running: false, live: r.download ?? 0, result }));
+      setState((s) => ({ ...s, ...r, phase: "done", running: false, live: r.download ?? 0, liveLoaded: null, result }));
       cbRef.current.onComplete?.(result);
     } catch (e) {
       if (ctrl.signal.aborted || isAbort(e)) return;

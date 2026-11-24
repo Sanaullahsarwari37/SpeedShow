@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { useEased } from "@/hooks/use-live";
 import { useSvgId } from "@/hooks/use-ui";
-import { formatMs, formatSpeed } from "@/lib/format";
+import { formatMs, formatRate, type RateUnit } from "@/lib/format";
 import type { Phase } from "@/lib/speedtest";
 import { METRICS } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -69,17 +69,19 @@ const STYLE: Record<Phase, { from: string; to: string; glow: string; label: stri
 interface Props {
   /** Target speed (Mbps); the gauge eases towards it itself. */
   mbps: number;
+  /** Show the centre figure in Mbps ("bits") or MB/s ("bytes"); the scale stays in Mbps. */
+  unit?: RateUnit;
   phase: Phase;
   latency: number | null;
   className?: string;
 }
 
 /** Liquid orb gauge: arc fills on a log scale and the liquid rises with speed. */
-export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency, className }: Props) {
+export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency, unit: rateUnit = "bits", className }: Props) {
   const eased = useEased(mbps);
   const s = STYLE[phase];
   const ping = phase === "latency";
-  const { value, unit } = ping ? { value: formatMs(latency), unit: "ms" } : formatSpeed(eased);
+  const { value, unit } = ping ? { value: formatMs(latency), unit: "ms" } : formatRate(eased, rateUnit);
   const fraction = ping ? 0 : toFraction(eased);
   const active = phase === "latency" || phase === "download" || phase === "upload";
   const level = phase === "idle" ? 0.1 : 0.1 + fraction * 0.82;

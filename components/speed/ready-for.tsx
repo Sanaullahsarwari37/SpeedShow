@@ -14,9 +14,9 @@ const ICON: Record<ActivityId, LucideIcon> = {
 };
 
 const STATUS: Record<Readiness, { icon: LucideIcon; label: string; mark: string; tile: string }> = {
-  yes: { icon: Check, label: "Ready", mark: "bg-emerald-400/15 text-emerald-300", tile: "border-emerald-400/20" },
-  limited: { icon: Minus, label: "Limited", mark: "bg-amber-400/15 text-amber-300", tile: "border-amber-400/20" },
-  no: { icon: X, label: "Too slow", mark: "bg-rose-400/15 text-rose-300", tile: "border-white/[0.06] opacity-60" },
+  yes: { icon: Check, label: "Ready", mark: "bg-emerald-400/15 text-emerald-600 dark:text-emerald-300", tile: "border-emerald-400/20" },
+  limited: { icon: Minus, label: "Limited", mark: "bg-amber-400/15 text-amber-600 dark:text-amber-300", tile: "border-amber-400/20" },
+  no: { icon: X, label: "Too slow", mark: "bg-rose-400/15 text-rose-600 dark:text-rose-300", tile: "border-border opacity-60" },
 };
 
 /** After a test: which everyday activities this connection handles, one device at a time. */
@@ -30,7 +30,7 @@ export function ReadyFor({ result }: { result: Pick<SpeedMetrics, "download" | "
         return (
           <li
             key={a.id}
-            className={cn("rise-in flex items-center gap-2.5 rounded-[var(--radius-tile)] border bg-white/[0.02] px-3 py-2.5", s.tile)}
+            className={cn("rise-in flex items-center gap-2.5 rounded-[var(--radius-tile)] border bg-foreground/[0.02] px-3 py-2.5", s.tile)}
             style={{ animationDelay: `${0.1 + i * 0.06}s` }}
           >
             <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

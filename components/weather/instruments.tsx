@@ -15,7 +15,7 @@ function Ring({ value, max = 100, color = "#7dd3fc", icon: Icon, iconClass }: { 
   return (
     <div className="relative grid size-12 shrink-0 place-items-center">
       <svg viewBox="0 0 40 40" className="absolute inset-0 size-full -rotate-90" aria-hidden="true">
-        <circle cx="20" cy="20" r={r} fill="none" stroke="white" strokeOpacity="0.1" strokeWidth="4" />
+        <circle cx="20" cy="20" r={r} fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="4" />
         <circle cx="20" cy="20" r={r} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(Math.min(max, Math.max(0, value)) / max) * c} ${c}`} />
       </svg>
       {Icon ? <Icon className={`size-4 ${iconClass ?? ""}`} aria-hidden="true" /> : null}
@@ -25,7 +25,7 @@ function Ring({ value, max = 100, color = "#7dd3fc", icon: Icon, iconClass }: { 
 
 function Disc({ icon: Icon, iconClass, children }: { icon: LucideIcon; iconClass: string; children?: React.ReactNode }) {
   return (
-    <div className="relative grid size-12 shrink-0 place-items-center rounded-full border border-white/15">
+    <div className="relative grid size-12 shrink-0 place-items-center rounded-full border border-border">
       <Icon className={`size-5 ${iconClass}`} aria-hidden="true" />
       {children}
     </div>
@@ -61,13 +61,13 @@ export function Instruments({ data, sun, t, wind }: { data: WeatherData; sun: Su
   const c = data.current;
   const rain = sun.today?.precipProb ?? 0;
   const items = [
-    { label: "Humidity", dial: <Ring value={c.humidity} icon={Droplets} iconClass="text-sky-200" />, value: `${Math.round(c.humidity)}%`, note: c.dewPoint != null ? `Dew point ${t(c.dewPoint)}` : undefined },
+    { label: "Humidity", dial: <Ring value={c.humidity} icon={Droplets} iconClass="text-sky-500 dark:text-sky-200" />, value: `${Math.round(c.humidity)}%`, note: c.dewPoint != null ? `Dew point ${t(c.dewPoint)}` : undefined },
     {
       label: "Wind",
       dial: (
-        <div className="relative grid size-12 shrink-0 place-items-center rounded-full border border-white/15">
-          <Navigation className="size-5 text-sky-200" style={{ transform: `rotate(${c.windDir + 135}deg)` }} aria-hidden="true" />
-          <span className="absolute -top-1 text-[0.55rem] font-bold text-white/70">N</span>
+        <div className="relative grid size-12 shrink-0 place-items-center rounded-full border border-border">
+          <Navigation className="size-5 text-sky-500 dark:text-sky-200" style={{ transform: `rotate(${c.windDir + 135}deg)` }} aria-hidden="true" />
+          <span className="absolute -top-1 text-[0.55rem] font-bold text-muted-foreground">N</span>
         </div>
       ),
       value: wind(c.windKmh),
@@ -75,31 +75,31 @@ export function Instruments({ data, sun, t, wind }: { data: WeatherData; sun: Su
     },
     {
       label: "Rain today",
-      dial: <Ring value={rain} icon={Umbrella} iconClass="text-sky-200" />,
+      dial: <Ring value={rain} icon={Umbrella} iconClass="text-sky-500 dark:text-sky-200" />,
       value: `${Math.round(rain)}%`,
       note: sun.today && sun.today.precipSum > 0 ? `${sun.today.precipSum.toFixed(1)} mm expected` : "No rain expected",
     },
     {
       label: "UV index",
-      dial: <Ring value={c.uv ?? 0} max={11} color={scaleColor(c.uv ?? 0, UV_STOPS)} icon={Sun} iconClass="text-amber-200" />,
+      dial: <Ring value={c.uv ?? 0} max={11} color={scaleColor(c.uv ?? 0, UV_STOPS)} icon={Sun} iconClass="text-amber-500 dark:text-amber-200" />,
       value: c.uv != null ? Math.round(c.uv) : "—",
       note: c.uv != null ? uvLevel(c.uv) : undefined,
     },
     {
       label: "Air quality",
-      dial: <Ring value={data.air?.usAqi ?? 0} max={300} color={scaleColor(data.air?.usAqi ?? 0, AQI_STOPS)} icon={Leaf} iconClass="text-emerald-200" />,
+      dial: <Ring value={data.air?.usAqi ?? 0} max={300} color={scaleColor(data.air?.usAqi ?? 0, AQI_STOPS)} icon={Leaf} iconClass="text-emerald-500 dark:text-emerald-200" />,
       value: data.air ? `${Math.round(data.air.usAqi)} AQI` : "—",
       note: data.air ? aqiLevel(data.air.usAqi) : "Not available",
     },
-    { label: "Cloud cover", dial: <Ring value={c.cloudCover} color="#cbd5e1" icon={Cloud} iconClass="text-slate-200" />, value: `${Math.round(c.cloudCover)}%`, note: c.cloudCover >= 85 ? "Overcast" : c.cloudCover >= 50 ? "Mostly cloudy" : c.cloudCover >= 20 ? "Partly cloudy" : "Clear" },
-    { label: "Visibility", dial: <Disc icon={Eye} iconClass="text-sky-200" />, value: c.visibilityM != null ? visibilityLabel(c.visibilityM) : "—" },
+    { label: "Cloud cover", dial: <Ring value={c.cloudCover} color="#cbd5e1" icon={Cloud} iconClass="text-slate-500 dark:text-slate-200" />, value: `${Math.round(c.cloudCover)}%`, note: c.cloudCover >= 85 ? "Overcast" : c.cloudCover >= 50 ? "Mostly cloudy" : c.cloudCover >= 20 ? "Partly cloudy" : "Clear" },
+    { label: "Visibility", dial: <Disc icon={Eye} iconClass="text-sky-500 dark:text-sky-200" />, value: c.visibilityM != null ? visibilityLabel(c.visibilityM) : "—" },
     {
       label: "Pressure",
-      dial: <Disc icon={Gauge} iconClass="text-indigo-200" />,
+      dial: <Disc icon={Gauge} iconClass="text-indigo-500 dark:text-indigo-200" />,
       value: (
         <>
           {Math.round(c.pressure)}
-          <span className="text-xs font-normal text-white/70"> hPa</span>
+          <span className="text-xs font-normal text-muted-foreground"> hPa</span>
         </>
       ),
     },

@@ -114,7 +114,7 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
   const c = data?.current;
 
   return (
-    <section id="weather" aria-labelledby="weather-title" className="scroll-mt-24 pt-10 sm:pt-14">
+    <section id="weather" aria-labelledby="weather-title" className="lazy-section scroll-mt-24 pt-10 sm:pt-14">
       <div data-reveal="" className="mb-4 flex flex-col gap-3 px-1 sm:mb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="flex items-center gap-2 text-[0.7rem] font-semibold tracking-[0.16em] text-primary uppercase">
@@ -127,14 +127,14 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
         </div>
         <div className="flex items-center gap-2 lg:w-[28rem]">
           <PlaceSearch onSelect={onSelectPlace} custom={custom} className="min-w-0 flex-1" />
-          <div role="group" aria-label="Temperature unit" className="flex rounded-full border border-border bg-black/30 p-0.5 text-xs font-semibold">
+          <div role="group" aria-label="Temperature unit" className="flex rounded-full border border-border bg-muted p-0.5 text-xs font-semibold">
             {(["c", "f"] as const).map((u) => (
               <button
                 key={u}
                 type="button"
                 aria-pressed={units === u}
                 onClick={() => setUnits(u)}
-                className={cn("rounded-full px-2.5 py-1.5 transition-colors", units === u ? "bg-white text-zinc-900" : "text-muted-foreground hover:text-foreground")}
+                className={cn("rounded-full px-2.5 py-1.5 transition-colors", units === u ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}
               >
                 °{u.toUpperCase()}
               </button>

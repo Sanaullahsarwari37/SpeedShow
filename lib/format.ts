@@ -13,6 +13,32 @@ export function formatSpeed(mbps: number | null | undefined): { value: string; u
   return { value: mbps.toFixed(2), unit: "Mbps" };
 }
 
+/** How speeds are shown: bits per second (the speed-test standard) or bytes per second (what download managers show). */
+export type RateUnit = "bits" | "bytes";
+
+/** Mbps → value + unit in the chosen system: Kbps/Mbps/Gbps or KB/s/MB/s/GB/s (1 byte = 8 bits). */
+export function formatRate(mbps: number | null | undefined, unit: RateUnit): { value: string; unit: string } {
+  if (unit === "bits") return formatSpeed(mbps);
+  const MBps = mbps == null || !Number.isFinite(mbps) || mbps <= 0 ? 0 : mbps / 8;
+  if (MBps <= 0) return { value: "0", unit: "MB/s" };
+  if (MBps < 0.9995) {
+    const KBps = MBps * 1000;
+    return { value: KBps >= 100 ? KBps.toFixed(0) : KBps.toFixed(1), unit: "KB/s" };
+  }
+  if (MBps >= 1000) return { value: (MBps / 1000).toFixed(2), unit: "GB/s" };
+  if (MBps >= 100) return { value: MBps.toFixed(0), unit: "MB/s" };
+  if (MBps >= 10) return { value: MBps.toFixed(1), unit: "MB/s" };
+  return { value: MBps.toFixed(2), unit: "MB/s" };
+}
+
+/** Bytes → "842 KB", "312 MB", "1.2 GB" (decimal units, as networks count them). */
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes == null || !Number.isFinite(bytes) || bytes <= 0) return "0 MB";
+  if (bytes < 1e6) return `${Math.round(bytes / 1e3)} KB`;
+  if (bytes < 1e9) return `${bytes < 1e7 ? (bytes / 1e6).toFixed(1) : Math.round(bytes / 1e6)} MB`;
+  return `${(bytes / 1e9).toFixed(2)} GB`;
+}
+
 export function speedLabel(mbps: number | null | undefined): string {
   const { value, unit } = formatSpeed(mbps);
   return `${value} ${unit}`;

@@ -3,15 +3,16 @@
 import { useEffect } from "react";
 
 /**
- * Time-based scroll reveals. Mark an element with `data-reveal` (fades and
- * rises as one block) or `data-reveal="stagger"` (its children follow one
- * after another). One shared IntersectionObserver; a MutationObserver picks
- * up content that renders later (weather, connection).
+ * Scroll reveals. Mark an element with `data-reveal` (fades and rises as one
+ * block) or `data-reveal="stagger"` (its children follow one after another).
+ * One shared IntersectionObserver; a MutationObserver picks up content that
+ * renders later (weather, connection). Scrolling itself stays native, so it
+ * runs on the compositor at full frame rate.
  *
  * Content is only hidden once this runs (`html.js-reveal`), so it is always
  * visible without JavaScript and to search engines. "Reduce motion" skips it.
  */
-export function RevealObserver() {
+export function ScrollReveal() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const root = document.documentElement;
@@ -40,11 +41,7 @@ export function RevealObserver() {
 
     let queued = 0;
     const mo = new MutationObserver(() => {
-      if (queued) return;
-      queued = requestAnimationFrame(() => {
-        queued = 0;
-        scan();
-      });
+      if (!queued) queued = requestAnimationFrame(() => ((queued = 0), scan()));
     });
     mo.observe(document.body, { childList: true, subtree: true });
 

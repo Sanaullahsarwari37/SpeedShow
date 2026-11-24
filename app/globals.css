@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
-/* The site is dark-only; `dark:` utilities always apply. */
-@custom-variant dark (&:where(html, html *));
+/* Light / dark / system theme: next-themes puts `.dark` on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -13,6 +13,7 @@
   --color-accent: var(--accent);
   --color-border: var(--border);
   --color-ring: var(--ring);
+  --color-surface: var(--surface);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
   /* Radius scale: panel → tile → control */
@@ -21,8 +22,35 @@
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ---------- Tokens: clean solid dark (one accent, colour only where it carries data) ---------- */
+/* ---------- Tokens: light by default, dark under `.dark`. Colour only where it carries data. ---------- */
 :root {
+  --background: #f5f6fa;
+  --foreground: #0a0b12;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --muted: rgba(15, 23, 42, 0.04);
+  --muted-foreground: #5b6072;
+  --accent: rgba(79, 70, 229, 0.08);
+  --border: rgba(15, 23, 42, 0.1);
+  --ring: #6366f1;
+  --surface: #ffffff;
+  /* Instrument panels (gauge, live chart) stay dark in both themes */
+  --surface-2: #0e0f15;
+  --edge: rgba(255, 255, 255, 0.7);
+  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 16px 36px -20px rgba(15, 23, 42, 0.2);
+  --frost: rgba(255, 255, 255, 0.78);
+  --heading-from: #0a0b12;
+  --heading-to: #64748b;
+  --btn-bg: #0a0b12;
+  --btn-fg: #ffffff;
+  --btn-hover: #23253a;
+  --glow-top: rgba(99, 102, 241, 0.12);
+  --grid-line: rgba(15, 23, 42, 0.05);
+  --blur: 16px;
+  color-scheme: light;
+}
+
+.dark {
   --background: #09090b;
   --foreground: #fafafa;
   --primary: #818cf8;
@@ -34,7 +62,16 @@
   --ring: #818cf8;
   --surface: #111113;
   --surface-2: #0d0d10;
-  --blur: 16px;
+  --edge: rgba(255, 255, 255, 0.16);
+  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -32px rgba(0, 0, 0, 0.9);
+  --frost: rgba(9, 9, 11, 0.78);
+  --heading-from: #ffffff;
+  --heading-to: #a1a1aa;
+  --btn-bg: #fafafa;
+  --btn-fg: #09090b;
+  --btn-hover: #e4e4e7;
+  --glow-top: rgba(255, 255, 255, 0.06);
+  --grid-line: rgba(255, 255, 255, 0.022);
   color-scheme: dark;
 }
 
@@ -76,33 +113,16 @@
 }
 
 /* ---------- Surfaces (utilities, so variants like sm:/hover: work) ---------- */
-/* Card: solid surface, hairline border, a 1px top highlight. No blur, no glow. */
-/* Cards: solid surface + cursor spotlight (--mx/--my set by components/pointer-spotlight.tsx) + light edge. */
+/* Card: solid surface, hairline border, soft shadow and a light top edge (shared rule below). */
 @utility glass {
   position: relative;
-  background: radial-gradient(520px circle at var(--mx, -1000px) var(--my, -1000px), rgba(255, 255, 255, 0.055), transparent 42%), var(--surface);
+  background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -32px rgba(0, 0, 0, 0.9);
-  /* Light edge: a 1px highlight fading down from the top border. */
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 35%, transparent 70%);
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
+  box-shadow: var(--card-shadow);
 }
 /* Frosted bar for content scrolling underneath (sticky header only). */
 @utility frosted {
-  background: rgba(9, 9, 11, 0.78);
+  background: var(--frost);
   border: 1px solid var(--border);
   -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
   backdrop-filter: blur(var(--blur)) saturate(150%);
@@ -111,34 +131,48 @@
 @utility lazy-section {
   content-visibility: auto;
   contain-intrinsic-size: auto 900px;
+  /* Paint containment clips at the box edge: leave room for card shadows. */
+  padding-bottom: 3rem;
+  margin-bottom: -3rem;
 }
 @utility glass-soft {
   background: var(--muted);
   border: 1px solid var(--border);
 }
-/* Instrument panel (gauge, chart): same card, a shade deeper. */
+/* Instrument panel (gauge, chart): the same card, always dark. Re-scopes the
+   colour tokens so everything inside reads as dark UI in both themes. */
 @utility console {
+  --foreground: #fafafa;
+  --muted-foreground: #a1a1aa;
+  --border: rgba(255, 255, 255, 0.08);
+  --accent: rgba(255, 255, 255, 0.06);
+  --muted: rgba(255, 255, 255, 0.035);
+  --edge: rgba(255, 255, 255, 0.16);
+  --btn-bg: #fafafa;
+  --btn-fg: #09090b;
+  --btn-hover: #e4e4e7;
   position: relative;
   color: #fafafa;
-  background: radial-gradient(520px circle at var(--mx, -1000px) var(--my, -1000px), rgba(255, 255, 255, 0.055), transparent 42%), var(--surface-2);
+  background: var(--surface-2);
   border: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -32px rgba(0, 0, 0, 0.9);
-  /* Light edge: a 1px highlight fading down from the top border. */
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 35%, transparent 70%);
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -28px rgba(0, 0, 0, 0.55);
+}
+/* Light edge on both card kinds: a 1px highlight fading down from the top border. */
+.glass::after,
+.console::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, var(--edge), transparent 45%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 /* Translucent tile on a sky / console background */
 @utility tile {
@@ -148,7 +182,7 @@
 }
 /* Quiet headline emphasis: white fading to zinc. */
 @utility text-gradient {
-  background: linear-gradient(180deg, #ffffff 20%, #a1a1aa 100%);
+  background: linear-gradient(180deg, var(--heading-from) 20%, var(--heading-to) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -156,12 +190,12 @@
 /* Primary action: solid white. */
 @utility btn-liquid {
   position: relative;
-  color: #09090b;
-  background: #fafafa;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
   transition: background-color 0.2s ease, transform 0.15s ease;
   &:hover {
-    background: #e4e4e7;
+    background: var(--btn-hover);
   }
 }
 @utility no-scrollbar {
@@ -352,24 +386,6 @@
   transform: none;
 }
 
-/* ---------- Smooth scrolling (Lenis) ---------- */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-html.lenis {
-  scroll-behavior: auto; /* Lenis eases; native smooth would fight it */
-}
-.lenis:not(.lenis-autoToggle).lenis-stopped {
-  overflow: clip;
-}
-.lenis [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-.lenis.lenis-smooth iframe {
-  pointer-events: none;
-}
-
 /* ---------- Gauge: label + value glide in when the stage changes ---------- */
 @keyframes swap-in {
   from {
@@ -466,7 +482,7 @@ html.lenis {
 @media (hover: hover) {
   .lift:hover {
     transform: translate3d(0, -3px, 0);
-    border-color: rgba(255, 255, 255, 0.16);
+    border-color: var(--edge);
   }
 }
 

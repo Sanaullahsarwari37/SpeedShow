@@ -52,7 +52,7 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <div className="relative min-w-0 flex-1">
-        <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-white/70" aria-hidden="true" />
+        <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <input
           type="search"
           role="combobox"
@@ -76,18 +76,18 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
           onKeyDown={onKeyDown}
           className={cn(
             SKY_CONTROL,
-            "h-10 w-full appearance-none rounded-full pr-9 pl-10 text-[16px] placeholder:text-white/60 sm:text-sm [&::-webkit-search-cancel-button]:hidden",
+            "h-10 w-full appearance-none rounded-full pr-9 pl-10 text-[16px] placeholder:text-muted-foreground sm:text-sm [&::-webkit-search-cancel-button]:hidden",
           )}
         />
         {isFetching ? (
-          <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-white/70" aria-hidden="true" />
+          <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" aria-hidden="true" />
         ) : q ? (
           <button
             type="button"
             aria-label="Clear search"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setQ("")}
-            className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-0.5 text-white/70 hover:text-white"
+            className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground hover:text-foreground"
           >
             <X className="size-4" />
           </button>
@@ -97,9 +97,8 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
           <ul
             id={listId}
             role="listbox"
-            data-lenis-prevent=""
             aria-label="Matching places"
-            className="absolute inset-x-0 top-12 z-30 max-h-80 overflow-auto rounded-2xl border border-white/15 bg-[#0b0c12] p-1.5 text-white shadow-2xl"
+            className="absolute inset-x-0 top-12 z-30 max-h-80 overflow-auto rounded-2xl border border-border bg-surface p-1.5 text-foreground shadow-2xl"
           >
             {results.map((r, i) => (
               <li
@@ -110,17 +109,17 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pick(r)}
                 onMouseEnter={() => setActive(i)}
-                className={cn("flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm", i === active && "bg-white/12")}
+                className={cn("flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm", i === active && "bg-accent")}
               >
                 <span aria-hidden="true">{flagEmoji(r.countryCode)}</span>
                 <span className="min-w-0 flex-1 truncate">
                   <span className="font-medium">{r.name}</span>
-                  <span className="text-white/60"> {joinParts([r.admin1, r.country])}</span>
+                  <span className="text-muted-foreground"> {joinParts([r.admin1, r.country])}</span>
                 </span>
               </li>
             ))}
             {!isFetching && results.length === 0 ? (
-              <li role="presentation" className="px-3 py-3 text-sm text-white/70">
+              <li role="presentation" className="px-3 py-3 text-sm text-muted-foreground">
                 {isError ? "Search isn't responding. Try again in a moment." : `No places match "${debounced}". Check the spelling or try a nearby city.`}
               </li>
             ) : null}

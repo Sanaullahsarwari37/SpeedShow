@@ -21,10 +21,16 @@ export interface TestUpdate extends SpeedMetrics {
   phase: Phase;
   /** Latest throughput sample (Mbps) for the active direction. */
   live: number;
+  /** Latest ping (ms) measured while the line is busy, during download/upload; null otherwise. */
+  liveLoaded: number | null;
+  /** Total bytes actually transferred so far (download + upload). */
+  bytes: number;
 }
 
 export interface RunResult extends SpeedMetrics {
   server: string;
+  /** Total bytes transferred by the test. */
+  bytes: number;
 }
 
 export const UNREACHABLE_MESSAGE =
@@ -87,8 +93,10 @@ interface EngineResults {
   getUnloadedJitter?: () => number | null | undefined;
   getDownLoadedLatency?: () => number | null | undefined;
   getUpLoadedLatency?: () => number | null | undefined;
-  getDownloadBandwidthPoints?: () => { bps?: number }[];
-  getUploadBandwidthPoints?: () => { bps?: number }[];
+  getDownloadBandwidthPoints?: () => { bps?: number; transferSize?: number }[];
+  getUploadBandwidthPoints?: () => { bps?: number; transferSize?: number }[];
+  getDownLoadedLatencyPoints?: () => number[];
+  getUpLoadedLatencyPoints?: () => number[];
 }
 
 function readMetrics(r: EngineResults): SpeedMetrics {
@@ -101,6 +109,19 @@ function readMetrics(r: EngineResults): SpeedMetrics {
     loadedDown: ms(r.getDownLoadedLatency?.() ?? sum.downLoadedLatency),
     loadedUp: ms(r.getUpLoadedLatency?.() ?? sum.upLoadedLatency),
   };
+}
+
+/** Bytes on the wire so far, from every finished download and upload request. */
+function transferred(r: EngineResults): number {
+  const sum = (pts: { transferSize?: number }[] | undefined) => (pts ?? []).reduce((t, p) => t + (typeof p.transferSize === "number" && p.transferSize > 0 ? p.transferSize : 0), 0);
+  return sum(r.getDownloadBandwidthPoints?.()) + sum(r.getUploadBandwidthPoints?.());
+}
+
+/** The most recent ping taken while the active direction is saturating the line. */
+function latestLoaded(r: EngineResults, phase: Phase): number | null {
+  const pts = phase === "download" ? r.getDownLoadedLatencyPoints?.() : phase === "upload" ? r.getUpLoadedLatencyPoints?.() : undefined;
+  const v = pts?.length ? pts[pts.length - 1] : null;
+  return typeof v === "number" && v > 0 ? Math.round(v * 10) / 10 : null;
 }
 
 function lastSample(points: { bps?: number }[] | undefined): number | null {
@@ -171,7 +192,8 @@ export async function runSpeedTest({
       live = type === "latency" ? 0 : live;
       armWatchdog();
       try {
-        onUpdate({ ...readMetrics(engine.results as EngineResults), phase, live });
+        const r = engine.results as EngineResults;
+        onUpdate({ ...readMetrics(r), phase, live, liveLoaded: null, bytes: transferred(r) });
       } catch {
         /* results not ready yet */
       }
@@ -191,7 +213,7 @@ export async function runSpeedTest({
               : null;
         const metrics = readMetrics(results);
         live = sample ?? (phase === "upload" ? metrics.upload : metrics.download) ?? live;
-        onUpdate({ ...metrics, phase, live });
+        onUpdate({ ...metrics, phase, live, liveLoaded: latestLoaded(results, phase), bytes: transferred(results) });
       } catch {
         /* intermediate results can be incomplete */
       }
@@ -201,12 +223,12 @@ export async function runSpeedTest({
       const metrics = readMetrics(results);
       if (!metrics.download && !metrics.upload) return fail(new Error(UNREACHABLE_MESSAGE));
       const fallback = new Promise<string>((r) => setTimeout(() => r("Cloudflare edge"), 1500));
-      void Promise.race([serverPromise, fallback]).then((server) => finish(() => resolve({ ...metrics, server })));
+      void Promise.race([serverPromise, fallback]).then((server) => finish(() => resolve({ ...metrics, server, bytes: transferred(results) })));
     };
 
     engine.onError = (e: unknown) => fail(new Error(typeof e === "string" && e ? `${UNREACHABLE_MESSAGE} (${e})` : UNREACHABLE_MESSAGE));
 
-    onUpdate({ download: null, upload: null, latency: null, jitter: null, loadedDown: null, loadedUp: null, phase, live: 0 });
+    onUpdate({ download: null, upload: null, latency: null, jitter: null, loadedDown: null, loadedUp: null, phase, live: 0, liveLoaded: null, bytes: 0 });
     armWatchdog();
     try {
       engine.play();

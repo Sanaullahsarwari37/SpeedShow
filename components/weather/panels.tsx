@@ -69,31 +69,31 @@ function SunPath({ s }: { s: SunState }) {
       {/* Daylight area above the horizon */}
       <path d={area} fill={`url(#${id}g)`} clipPath={`url(#${id}a)`} />
       {/* Whole day (future), then the elapsed part brighter */}
-      <path d={line} fill="none" stroke="#fff" strokeOpacity="0.22" strokeWidth="1.5" strokeDasharray="3 4" />
+      <path d={line} fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" strokeDasharray="3 4" />
       <path d={line} fill="none" stroke="#fbbf24" strokeWidth="2.25" strokeLinecap="round" clipPath={`url(#${id}p)`} />
 
       {/* Horizon + sunrise / sunset ticks */}
-      <line x1="0" x2={W} y1={HY} y2={HY} stroke="#fff" strokeOpacity="0.25" />
+      <line x1="0" x2={W} y1={HY} y2={HY} stroke="currentColor" strokeOpacity="0.25" />
       {[s.rise, s.set].map((t, i) => (
         <g key={t}>
-          <circle cx={x(t)} cy={HY} r="2.5" fill="#111113" stroke="#fff" strokeOpacity="0.6" />
+          <circle cx={x(t)} cy={HY} r="2.5" style={{ fill: "var(--surface)" }} stroke="currentColor" strokeOpacity="0.6" />
           {/* Outside the arc: sunrise label to its left, sunset to its right */}
-          <text x={x(t) + (i ? 7 : -7)} y={HY - 7} textAnchor={i ? "start" : "end"} fontSize="10" fill="#d4d4d8">
+          <text x={x(t) + (i ? 7 : -7)} y={HY - 7} textAnchor={i ? "start" : "end"} fontSize="10" fill="currentColor" fillOpacity="0.8">
             {formatClock(t)}
           </text>
         </g>
       ))}
       {/* Time axis */}
       {[0, 360, 720, 1080, 1440].map((t) => (
-        <text key={t} x={Math.min(W - 2, Math.max(2, x(t)))} y={H - 2} textAnchor={t === 0 ? "start" : t === 1440 ? "end" : "middle"} fontSize="9" fill="#71717a">
+        <text key={t} x={Math.min(W - 2, Math.max(2, x(t)))} y={H - 2} textAnchor={t === 0 ? "start" : t === 1440 ? "end" : "middle"} fontSize="9" fill="currentColor" fillOpacity="0.5">
           {formatClock(t % DAY, { minute: undefined })}
         </text>
       ))}
 
       {/* Now */}
-      <line x1={sx} x2={sx} y1="8" y2={HY} stroke="#fff" strokeOpacity="0.08" />
+      <line x1={sx} x2={sx} y1="8" y2={HY} stroke="currentColor" strokeOpacity="0.1" />
       {up ? <circle cx={sx} cy={sy} r="16" fill={`url(#${id}s)`} /> : null}
-      <circle cx={sx} cy={sy} r={up ? 5.5 : 4} fill={up ? "#fde68a" : "#111113"} stroke={up ? "none" : "#a1a1aa"} strokeWidth="1.5" />
+      <circle cx={sx} cy={sy} r={up ? 5.5 : 4} fill={up ? "#fbbf24" : "var(--surface)"} stroke={up ? "none" : "currentColor"} strokeWidth="1.5" />
     </svg>
   );
 }
@@ -143,7 +143,7 @@ export function SunMoon({ s }: { s: SunState }) {
       </dl>
 
       <div className="flex items-center gap-4 px-4 py-4 sm:px-5">
-        <span className="relative grid size-14 shrink-0 place-items-center rounded-full border border-border bg-indigo-400/5">
+        <span className="relative grid size-14 shrink-0 place-items-center rounded-full border border-border bg-slate-900 dark:bg-indigo-400/5">
           <MoonGlyph fraction={s.moon.fraction} className="size-10" />
         </span>
         <div className="min-w-0 flex-1">

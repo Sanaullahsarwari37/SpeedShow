@@ -40,7 +40,7 @@ export function NavLinks({ items }: { items: { href: string; label: string }[] }
               aria-current={on ? "location" : undefined}
               className={cn(
                 "relative rounded-full px-3.5 py-2 text-sm transition-colors duration-300",
-                on ? "bg-white/[0.08] text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                on ? "bg-foreground/[0.06] text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
             >
               {n.label}

@@ -34,7 +34,7 @@ export const siteConfig = {
   ],
   locale: "en_US",
   url: resolveSiteUrl(),
-  themeColor: "#06070b",
+  themeColor: { light: "#f5f6fa", dark: "#09090b" },
 } as const;
 
 export const absoluteUrl = (path = "/") => `${siteConfig.url}${path === "/" ? "" : path}`;

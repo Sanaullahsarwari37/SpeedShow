@@ -52,7 +52,7 @@ export function Footer() {
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               A fast, honest internet speed test with live weather and local time. Free and ad-free.
             </p>
-            <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1 text-xs text-emerald-300">
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.06] px-3 py-1 text-xs text-emerald-700 dark:text-emerald-300">
               <ShieldCheck className="size-3.5" aria-hidden="true" />
               No accounts · no tracking · results stay with you
             </p>

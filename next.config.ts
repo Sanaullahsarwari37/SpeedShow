@@ -42,6 +42,12 @@ const nextConfig: NextConfig = {
   compress: true,
   // Don't generate AGENTS.md (AI-assistant notes) in the project on `next dev` / `next build`.
   agentRules: false,
+  // React Compiler: automatic memoisation, so the live test (many updates a second) re-renders only what changed.
+  reactCompiler: true,
+  experimental: {
+    // Inline the (small) stylesheet into the HTML: no render-blocking CSS request before first paint.
+    inlineCss: true,
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

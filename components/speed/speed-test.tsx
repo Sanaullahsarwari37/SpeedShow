@@ -19,7 +19,7 @@ import { useNetworkInfo, useWeather } from "@/hooks/use-queries";
 import { useSpeedTest } from "@/hooks/use-speed-test";
 import { useStoredState } from "@/hooks/use-stored";
 import { useFlash } from "@/hooks/use-ui";
-import { formatMs, speedLabel } from "@/lib/format";
+import { formatBytes, formatMs, speedLabel, type RateUnit } from "@/lib/format";
 import { rateConnection } from "@/lib/rating";
 import { PHASE_ORDER, preloadEngine, type Phase } from "@/lib/speedtest";
 import { METRICS, TIER_TONE } from "@/lib/theme";
@@ -43,6 +43,7 @@ const isPlace = (x: unknown): x is GeoPlace | null => {
   return typeof p.name === "string" && typeof p.latitude === "number" && typeof p.longitude === "number" && Math.abs(p.latitude) <= 90 && Math.abs(p.longitude) <= 180;
 };
 const isUnits = (v: unknown): v is Units => v === "c" || v === "f";
+const isRateUnit = (v: unknown): v is RateUnit => v === "bits" || v === "bytes";
 
 /* ----------------------------- pieces ----------------------------- */
 
@@ -90,6 +91,7 @@ export function SpeedTest() {
   const network = useNetworkInfo();
   const [place, setPlace] = useStoredState<GeoPlace | null>("speedshow:weather-place", null, isPlace);
   const [units, setUnits] = useStoredState<Units>("speedshow:units", "c", isUnits);
+  const [rateUnit, setRateUnit] = useStoredState<RateUnit>("speedshow:rate-unit", "bits", isRateUnit);
   const [shared, flashShared] = useFlash(1800);
 
   const lat = place ? place.latitude : network.data?.latitude;
@@ -156,9 +158,9 @@ export function SpeedTest() {
 
   const status = {
     idle: "Connecting to the nearest server…",
-    download: "Measuring download speed…",
+    download: state.liveLoaded != null ? `Measuring download · ping ${formatMs(state.liveLoaded)} ms under load` : "Measuring download speed…",
     latency: "Measuring ping on a quiet line…",
-    upload: "Measuring upload speed…",
+    upload: state.liveLoaded != null ? `Measuring upload · ping ${formatMs(state.liveLoaded)} ms under load` : "Measuring upload speed…",
     done: `Tested via ${result?.server ?? "Cloudflare"}`,
     error: "",
   }[phase];
@@ -166,7 +168,7 @@ export function SpeedTest() {
   return (
     <div className="space-y-4 sm:space-y-5">
       {network.data?.vpn.detected ? (
-        <p role="status" className="rise-in mx-auto flex w-fit items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/[0.06] px-3 py-1 text-xs text-amber-200/90">
+        <p role="status" className="rise-in mx-auto flex w-fit items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/[0.06] px-3 py-1 text-xs text-amber-700 dark:text-amber-200/90">
           <ShieldCheck className="size-3.5 shrink-0" aria-hidden="true" />
           VPN detected: results measure the VPN server, not your own line.
         </p>
@@ -183,7 +185,7 @@ export function SpeedTest() {
           style={cssVars({ "--d": "0.08s" })}
         >
           <Steps phase={phase} />
-          <SpeedGauge mbps={target} phase={phase} latency={state.latency} className="mt-1" />
+          <SpeedGauge mbps={target} phase={phase} latency={state.latency} unit={rateUnit} className="mt-1" />
 
           <div className="relative mt-2 flex flex-col items-center gap-2.5">
             {running ? (
@@ -212,7 +214,7 @@ export function SpeedTest() {
         </Surface>
 
         <div className="rise-in lg:col-span-5" style={cssVars({ "--d": "0.16s" })}>
-          <SpeedTile state={state} />
+          <SpeedTile state={state} unit={rateUnit} onUnit={setRateUnit} />
         </div>
         <div className="rise-in lg:col-span-5" style={cssVars({ "--d": "0.24s" })}>
           <LatencyTile state={state} />
@@ -231,7 +233,9 @@ export function SpeedTest() {
                 <p className="min-w-0 text-sm text-pretty text-muted-foreground">{rating.blurb}</p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="hidden text-xs text-muted-foreground md:inline">via {result.server}</span>
+                <span className="hidden text-xs text-muted-foreground md:inline">
+                  via {result.server} · {formatBytes(state.bytes)} used
+                </span>
                 <Button size="sm" onClick={share}>
                   {shared ? <Check /> : <Share2 />} {shared ? "Copied" : "Share result"}
                 </Button>
