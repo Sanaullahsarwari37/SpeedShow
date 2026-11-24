@@ -6,8 +6,7 @@ const VARIANTS = {
   liquid: "btn-liquid",
   glass: "glass-soft text-foreground hover:bg-accent",
   ghost: "text-muted-foreground hover:bg-accent hover:text-foreground",
-  /** For dark consoles and sky backgrounds in both themes. */
-  onDark: "border border-white/20 bg-white/10 text-white hover:bg-white/20",
+  outline: "border border-border bg-muted text-foreground hover:bg-accent",
 } as const;
 
 const SIZES = {

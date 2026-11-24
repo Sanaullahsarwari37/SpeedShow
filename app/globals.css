@@ -34,8 +34,14 @@
   --border: rgba(15, 23, 42, 0.1);
   --ring: #6366f1;
   --surface: #ffffff;
-  /* Instrument panels (gauge, live chart) stay dark in both themes */
-  --surface-2: #0e0f15;
+  /* Instrument panels (gauge, live chart): a faint cool tint under white */
+  --surface-2: #f3f5fb;
+  --orb-1: #ffffff;
+  --orb-2: #f1f3f9;
+  --orb-3: #dde2ee;
+  --orb-rim: rgba(15, 23, 42, 0.12);
+  --orb-text-shadow: rgba(255, 255, 255, 0.85);
+  --console-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 22px 44px -24px rgba(49, 46, 129, 0.22);
   --edge: rgba(255, 255, 255, 0.7);
   --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 16px 36px -20px rgba(15, 23, 42, 0.2);
   --frost: rgba(255, 255, 255, 0.78);
@@ -62,6 +68,12 @@
   --ring: #818cf8;
   --surface: #111113;
   --surface-2: #0d0d10;
+  --orb-1: #1f1f25;
+  --orb-2: #131317;
+  --orb-3: #0a0a0c;
+  --orb-rim: rgba(255, 255, 255, 0.14);
+  --orb-text-shadow: rgba(0, 0, 0, 0.6);
+  --console-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -28px rgba(0, 0, 0, 0.55);
   --edge: rgba(255, 255, 255, 0.16);
   --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -32px rgba(0, 0, 0, 0.9);
   --frost: rgba(9, 9, 11, 0.78);
@@ -139,23 +151,12 @@
   background: var(--muted);
   border: 1px solid var(--border);
 }
-/* Instrument panel (gauge, chart): the same card, always dark. Re-scopes the
-   colour tokens so everything inside reads as dark UI in both themes. */
+/* Instrument panel (gauge, chart): the same card, a shade deeper, in both themes. */
 @utility console {
-  --foreground: #fafafa;
-  --muted-foreground: #a1a1aa;
-  --border: rgba(255, 255, 255, 0.08);
-  --accent: rgba(255, 255, 255, 0.06);
-  --muted: rgba(255, 255, 255, 0.035);
-  --edge: rgba(255, 255, 255, 0.16);
-  --btn-bg: #fafafa;
-  --btn-fg: #09090b;
-  --btn-hover: #e4e4e7;
   position: relative;
-  color: #fafafa;
-  background: var(--surface-2);
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
   border: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -28px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--console-shadow);
 }
 /* Light edge on both card kinds: a 1px highlight fading down from the top border. */
 .glass::after,

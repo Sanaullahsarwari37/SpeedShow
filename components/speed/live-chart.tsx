@@ -42,7 +42,7 @@ export const LiveChart = React.memo(function LiveChart({ series, live }: { serie
         icon={Activity}
         title={
           <span className="flex items-center gap-2">
-            Live throughput <LiveDot on={live} className={live ? "text-cyan-400" : "text-white/30"} />
+            Live throughput <LiveDot on={live} className={live ? "text-cyan-400" : "text-muted-foreground/50"} />
           </span>
         }
         actions={
@@ -57,7 +57,7 @@ export const LiveChart = React.memo(function LiveChart({ series, live }: { serie
       />
       <div className="flex flex-1 flex-col justify-center p-4 sm:px-5">
 
-      <div className="relative overflow-hidden rounded-[var(--radius-tile)] border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent">
+      <div className="relative overflow-hidden rounded-[var(--radius-tile)] border border-border bg-gradient-to-b from-foreground/[0.04] to-transparent">
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block h-36 w-full sm:h-40" role="img" aria-label="Real-time download and upload throughput">
           <defs>
             {DIRS.map((d) => (
@@ -75,7 +75,7 @@ export const LiveChart = React.memo(function LiveChart({ series, live }: { serie
           </defs>
           {[0.25, 0.5, 0.75].map((g) => {
             const y = BOX.top + (H - BOX.top - BOX.bottom) * g;
-            return <line key={g} x1="0" x2={W} y1={y} y2={y} stroke="#fff" strokeOpacity="0.07" strokeDasharray="4 8" vectorEffect="non-scaling-stroke" />;
+            return <line key={g} x1="0" x2={W} y1={y} y2={y} stroke="currentColor" strokeOpacity="0.1" strokeDasharray="4 8" vectorEffect="non-scaling-stroke" />;
           })}
           {DIRS.map((d) => {
             const p = lineFor(d);
@@ -91,14 +91,14 @@ export const LiveChart = React.memo(function LiveChart({ series, live }: { serie
         {live && tip ? (
           <span
             aria-hidden="true"
-            className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-white shadow-[0_0_12px_rgba(255,255,255,0.6)]"
-            style={{ left: `${(tip[0] / W) * 100}%`, top: `${(tip[1] / H) * 100}%`, borderColor: tipColor }}
+            className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-[var(--surface)] shadow-[0_0_12px_currentColor]"
+            style={{ left: `${(tip[0] / W) * 100}%`, top: `${(tip[1] / H) * 100}%`, borderColor: tipColor, color: tipColor }}
           />
         ) : null}
-        <span className="pointer-events-none absolute top-2 right-3 text-[0.65rem] text-white/40 tabular-nums">
+        <span className="pointer-events-none absolute top-2 right-3 text-[0.65rem] text-muted-foreground tabular-nums">
           {scale.value} {scale.unit}
         </span>
-        {!series.length ? <span className="absolute inset-0 grid place-items-center text-xs text-white/40">The speed curve appears here during the test</span> : null}
+        {!series.length ? <span className="absolute inset-0 grid place-items-center text-xs text-muted-foreground">The speed curve appears here during the test</span> : null}
       </div>
       </div>
     </div>

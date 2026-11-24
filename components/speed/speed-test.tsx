@@ -70,10 +70,10 @@ function Steps({ phase }: { phase: Phase }) {
             className={cn(
               "flex flex-1 items-center justify-center gap-1 rounded-full border px-2 py-1.5 text-[0.65rem] font-medium transition-colors duration-300",
               active
-                ? "border-white/25 bg-white/10 text-white shadow-[0_0_24px_-6px_rgba(255,255,255,0.25)]"
+                ? "border-foreground/25 bg-foreground/[0.07] text-foreground shadow-sm"
                 : done
-                  ? "border-white/12 bg-white/[0.05] text-white/80"
-                  : "border-white/[0.07] text-white/40",
+                  ? "border-foreground/12 bg-foreground/[0.04] text-foreground/80"
+                  : "border-foreground/[0.08] text-foreground/45",
             )}
           >
             <Icon className={cn("size-3", (active || done) && m.text, active && "animate-pulse")} aria-hidden="true" />
@@ -189,7 +189,7 @@ export function SpeedTest() {
 
           <div className="relative mt-2 flex flex-col items-center gap-2.5">
             {running ? (
-              <Button variant="onDark" size="lg" onClick={stop} className="min-w-44">
+              <Button variant="outline" size="lg" onClick={stop} className="min-w-44">
                 <Square className="fill-current" /> Stop
               </Button>
             ) : (
@@ -198,11 +198,11 @@ export function SpeedTest() {
                 {phase === "idle" ? "Start test" : "Test again"}
               </Button>
             )}
-            <p className="min-h-4 text-center text-xs text-white/55" aria-live="polite">
+            <p className="min-h-4 text-center text-xs text-muted-foreground" aria-live="polite">
               {status}
             </p>
             {phase === "error" ? (
-              <p role="alert" className="flex max-w-md items-start gap-2 rounded-xl border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+              <p role="alert" className="flex max-w-md items-start gap-2 rounded-xl border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-200">
                 <X className="mt-px size-3.5 shrink-0" aria-hidden="true" />
                 {state.error}
               </p>

@@ -103,9 +103,9 @@ export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency,
             <stop offset="100%" stopColor={s.to} stopOpacity="0.9" />
           </linearGradient>
           <radialGradient id={`${id}o`} cx="50%" cy="30%" r="80%">
-            <stop offset="0%" stopColor="#1f1f25" />
-            <stop offset="55%" stopColor="#131317" />
-            <stop offset="100%" stopColor="#0a0a0c" />
+            <stop offset="0%" style={{ stopColor: "var(--orb-1)" }} />
+            <stop offset="55%" style={{ stopColor: "var(--orb-2)" }} />
+            <stop offset="100%" style={{ stopColor: "var(--orb-3)" }} />
           </radialGradient>
           <clipPath id={`${id}c`}>
             <circle cx={CX} cy={CY} r={ORB_R - 2} />
@@ -149,13 +149,13 @@ export const SpeedGauge = React.memo(function SpeedGauge({ mbps, phase, latency,
             : null}
           <ellipse cx={CX - 34} cy={CY - 72} rx="52" ry="20" fill="#fff" fillOpacity="0.1" transform={`rotate(-28 ${CX - 34} ${CY - 72})`} />
         </g>
-        <circle cx={CX} cy={CY} r={ORB_R} fill="none" stroke="#fff" strokeOpacity="0.14" strokeWidth="1.5" />
+        <circle cx={CX} cy={CY} r={ORB_R} fill="none" style={{ stroke: "var(--orb-rim)" }} strokeWidth="1.5" />
       </svg>
 
       {/* Re-keyed per stage so the readout glides in on each switch (download → ping → upload). */}
-      <div key={phase} className="swap-in pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-white" aria-hidden="true">
+      <div key={phase} className="swap-in pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-foreground" aria-hidden="true">
         <span className="text-[0.7rem] font-semibold tracking-[0.18em] uppercase opacity-75 sm:text-xs">{s.label}</span>
-        <span className="font-mono text-[2.5rem] leading-tight font-semibold tracking-tight tabular-nums [text-shadow:0_2px_24px_rgba(0,0,0,0.6)] sm:text-5xl">{value}</span>
+        <span className="font-mono text-[2.5rem] leading-tight font-semibold tracking-tight tabular-nums [text-shadow:0_2px_24px_var(--orb-text-shadow)] sm:text-5xl">{value}</span>
         <span className="text-sm font-medium tracking-wide opacity-85">{unit}</span>
       </div>
     </div>
