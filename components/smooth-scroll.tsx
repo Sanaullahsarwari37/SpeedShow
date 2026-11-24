@@ -1,28 +1,39 @@
 "use client";
 
 import { useEffect } from "react";
-import Lenis from "lenis";
+import type Lenis from "lenis";
 
-/** Height of the sticky masthead plus a little air, for in-page jumps. */
+/** Height of the sticky header plus a little air, for in-page jumps. */
 const HEADER_OFFSET = -72;
 
 /**
  * Inertial wheel scrolling (Lenis) plus eased in-page anchor jumps.
- * Touch devices keep native scrolling; "reduce motion" turns smoothing off.
+ * Lenis loads when the browser is idle, so it never competes with the first
+ * paint or the speed test start. Touch devices keep native scrolling;
+ * "reduce motion" turns smoothing off.
  */
 export function SmoothScroll() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const lenis = new Lenis({
-      autoRaf: true,
-      lerp: 0.085,
-      smoothWheel: true,
-      wheelMultiplier: 0.95,
-      stopInertiaOnNavigate: true,
-      // Let nested scrollers (search results, wide tables) scroll themselves.
-      allowNestedScroll: true,
-    });
+    let lenis: Lenis | null = null;
+    let cancelled = false;
+
+    const startLenis = async () => {
+      const { default: LenisCtor } = await import("lenis");
+      if (cancelled) return;
+      lenis = new LenisCtor({
+        autoRaf: true,
+        lerp: 0.085,
+        smoothWheel: true,
+        wheelMultiplier: 0.95,
+        stopInertiaOnNavigate: true,
+        // Let nested scrollers (search results, wide tables) scroll themselves.
+        allowNestedScroll: true,
+      });
+    };
+    const hasIdle = "requestIdleCallback" in window;
+    const handle = hasIdle ? window.requestIdleCallback(() => void startLenis(), { timeout: 2000 }) : window.setTimeout(() => void startLenis(), 300);
 
     // Same-page anchors (including "/#weather" from other pages' headers) glide instead of jumping.
     const onClick = (e: MouseEvent) => {
@@ -34,14 +45,18 @@ export function SmoothScroll() {
       const el = document.getElementById(decodeURIComponent(url.hash.slice(1)));
       if (!el) return;
       e.preventDefault();
-      lenis.scrollTo(el, { offset: HEADER_OFFSET, duration: 1.1 });
+      if (lenis) lenis.scrollTo(el, { offset: HEADER_OFFSET, duration: 1.1 });
+      else el.scrollIntoView({ behavior: "smooth" }); // before Lenis has loaded
       window.history.pushState(null, "", url.hash);
     };
     document.addEventListener("click", onClick);
 
     return () => {
+      cancelled = true;
+      if (hasIdle) window.cancelIdleCallback(handle);
+      else window.clearTimeout(handle);
       document.removeEventListener("click", onClick);
-      lenis.destroy();
+      lenis?.destroy();
     };
   }, []);
 

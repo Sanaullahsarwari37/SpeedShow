@@ -55,3 +55,35 @@ export function bufferbloatGrade(idle: number | null, loaded: number | null): { 
   if (rise < 400) return { grade: "D", tone: "danger" };
   return { grade: "F", tone: "danger" };
 }
+
+export type Readiness = "yes" | "limited" | "no";
+
+/**
+ * Comfortable ("yes") and minimum ("limited") requirements per activity, per device.
+ * Same sources as the NEEDS table: download/upload in Mbps, ping in ms.
+ */
+const ACTIVITIES = [
+  { id: "browse", label: "Browsing", good: { down: 5, up: 1 }, min: { down: 1, up: 0.5 } },
+  { id: "hd", label: "HD video", good: { down: 8 }, min: { down: 5 } },
+  { id: "4k", label: "4K video", good: { down: 25 }, min: { down: 15 } },
+  { id: "calls", label: "Video calls", good: { down: 4, up: 4, ping: 100 }, min: { down: 3, up: 3, ping: 150 } },
+  { id: "gaming", label: "Gaming", good: { down: 10, up: 3, ping: 50 }, min: { down: 5, up: 2, ping: 80 } },
+  { id: "stream", label: "Live streaming", good: { up: 10, ping: 100 }, min: { up: 6, ping: 150 } },
+] as const;
+
+export type ActivityId = (typeof ACTIVITIES)[number]["id"];
+
+type Need = { down?: number; up?: number; ping?: number };
+const meets = (n: Need, d: number, u: number, p: number | null) =>
+  (n.down == null || d >= n.down) && (n.up == null || u >= n.up) && (n.ping == null || p == null || p <= n.ping);
+
+/** What this result comfortably handles, handles with limits, or doesn't. */
+export function readiness({ download, upload, latency }: Pick<SpeedMetrics, "download" | "upload" | "latency">) {
+  const d = download ?? 0;
+  const u = upload ?? 0;
+  return ACTIVITIES.map((a) => ({
+    id: a.id as ActivityId,
+    label: a.label,
+    status: (meets(a.good, d, u, latency) ? "yes" : meets(a.min, d, u, latency) ? "limited" : "no") as Readiness,
+  }));
+}

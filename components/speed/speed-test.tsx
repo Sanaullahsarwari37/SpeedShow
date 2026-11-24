@@ -7,6 +7,7 @@ import { Check, Play, RotateCcw, Share2, ShieldCheck, Square, X, Zap } from "luc
 import { NetworkCard } from "@/components/network-card";
 import { SpeedGauge } from "@/components/speed/gauge";
 import { LiveChart } from "@/components/speed/live-chart";
+import { ReadyFor } from "@/components/speed/ready-for";
 import { LatencyTile, SpeedTile } from "@/components/speed/result-tiles";
 import { Button } from "@/components/ui/button";
 import { Chip, SectionIntro } from "@/components/ui/primitives";
@@ -221,7 +222,8 @@ export function SpeedTest() {
         </Surface>
 
         {rating && result ? (
-          <Surface as="div" className="rise-in flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5 lg:col-span-12">
+          <Surface as="div" className="rise-in px-4 py-4 sm:px-5 lg:col-span-12">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3">
                 <Chip tone={TIER_TONE[rating.tier]} icon={Zap}>
                   {rating.label}
@@ -234,7 +236,12 @@ export function SpeedTest() {
                   {shared ? <Check /> : <Share2 />} {shared ? "Copied" : "Share result"}
                 </Button>
               </div>
-            </Surface>
+            </div>
+            <div className="mt-4 border-t border-border pt-4">
+              <p className="mb-2.5 text-xs font-medium text-muted-foreground">Ready for, per device</p>
+              <ReadyFor result={result} />
+            </div>
+          </Surface>
         ) : null}
       </section>
 
@@ -254,7 +261,7 @@ export function SpeedTest() {
       />
 
       {/* ───────────── Connection ───────────── */}
-      <section aria-labelledby="network-title" className="pt-10 sm:pt-14">
+      <section id="network" aria-labelledby="network-title" className="scroll-mt-24 pt-10 sm:pt-14">
         <SectionIntro id="network-title" eyebrow="Network" title="Your connection" />
         <div data-reveal="stagger" className="grid grid-cols-1">
           <NetworkCard data={network.data} isLoading={network.isPending} isError={network.isError} isFetching={network.isFetching} onRetry={retryNetwork} />
