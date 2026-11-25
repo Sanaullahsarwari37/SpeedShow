@@ -8,7 +8,6 @@ import { siteConfig } from "@/lib/site";
 const NAV = [
   { href: "/#test", label: "Speed test" },
   { href: "/#weather", label: "Weather" },
-  { href: "/#guide", label: "Guide" },
 ];
 
 export function Header() {
@@ -29,9 +28,6 @@ export function Header() {
         <nav aria-label="Primary" className="flex items-center gap-1">
           <NavLinks items={NAV} />
           <ThemeSwitch className="ml-1" />
-          <a href="/#test" className="btn-liquid ml-1 rounded-full px-4 py-2 text-sm font-semibold sm:hidden">
-            Test
-          </a>
         </nav>
       </div>
     </header>

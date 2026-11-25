@@ -4,7 +4,7 @@ import type { Tier } from "@/lib/rating";
 
 /**
  * Single source of truth for every measured metric: label, icon and colours.
- * The gauge, stat tiles, live chart, progress steps and guide all read from here,
+ * The gauge, stat tiles, live chart, and progress steps all read from here,
  * so a colour or label changes in one place.
  */
 export const METRICS = {
@@ -16,7 +16,6 @@ export const METRICS = {
     from: "#22d3ee",
     to: "#3b82f6",
     glow: "#06b6d4",
-    help: "How fast data reaches you. It decides how quickly pages load, videos start and files download.",
   },
   upload: {
     label: "Upload",
@@ -26,7 +25,6 @@ export const METRICS = {
     from: "#a78bfa",
     to: "#d946ef",
     glow: "#8b5cf6",
-    help: "How fast you send data: video calls, live streaming, cloud backups and large attachments.",
   },
   ping: {
     label: "Ping",
@@ -36,7 +34,6 @@ export const METRICS = {
     from: "#34d399",
     to: "#0ea5e9",
     glow: "#34d399",
-    help: "Round-trip time to the server on a quiet line. Lower feels snappier; under 30 ms is excellent.",
   },
   loaded: {
     label: "Loaded ping",
@@ -47,7 +44,6 @@ export const METRICS = {
     from: "#fbbf24",
     to: "#f97316",
     glow: "#f59e0b",
-    help: "Ping while the line is busy. A big jump means bufferbloat, the usual cause of laggy calls and games.",
   },
   jitter: {
     label: "Jitter",
@@ -57,9 +53,8 @@ export const METRICS = {
     from: "#fb7185",
     to: "#e11d48",
     glow: "#fb7185",
-    help: "How much ping varies between packets. Under 10 ms keeps calls and games smooth.",
   },
-} as const satisfies Record<string, { label: string; short?: string; icon: LucideIcon; text: string; dot: string; from: string; to: string; glow: string; help: string }>;
+} as const satisfies Record<string, { label: string; short?: string; icon: LucideIcon; text: string; dot: string; from: string; to: string; glow: string }>;
 
 export type MetricKey = keyof typeof METRICS;
 

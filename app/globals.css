@@ -474,19 +474,6 @@
   color: transparent;
 }
 
-/* Cards respond to the pointer: a soft lift and a brighter edge. */
-.lift {
-  transition:
-    transform 0.4s var(--ease-out-expo),
-    border-color 0.3s ease;
-}
-@media (hover: hover) {
-  .lift:hover {
-    transform: translate3d(0, -3px, 0);
-    border-color: var(--edge);
-  }
-}
-
 .precip {
   position: absolute;
   inset: 0;

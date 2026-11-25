@@ -31,16 +31,6 @@ export function rateConnection({ download, latency, loadedDown }: Pick<SpeedMetr
   return base;
 }
 
-/** What each activity needs, for the guide table (download Mbps, upload Mbps, max latency ms). */
-export const NEEDS = [
-  { activity: "Browsing, email and messaging", down: "1–5 Mbps", up: "1 Mbps", ping: "Any" },
-  { activity: "HD video streaming (1080p)", down: "5–8 Mbps", up: "—", ping: "Any" },
-  { activity: "4K video streaming", down: "15–25 Mbps", up: "—", ping: "Any" },
-  { activity: "HD video calls", down: "3–4 Mbps", up: "3–4 Mbps", ping: "Under 100 ms" },
-  { activity: "Online gaming", down: "5–10 Mbps", up: "2–3 Mbps", ping: "Under 50 ms" },
-  { activity: "Live streaming in 1080p", down: "5 Mbps", up: "6–10 Mbps", ping: "Under 100 ms" },
-] as const;
-
 /**
  * Bufferbloat grade from how much latency rises under load (loaded − idle),
  * using the common A+…F bands (as popularised by the Waveform test).
@@ -60,7 +50,7 @@ export type Readiness = "yes" | "limited" | "no";
 
 /**
  * Comfortable ("yes") and minimum ("limited") requirements per activity, per device.
- * Same sources as the NEEDS table: download/upload in Mbps, ping in ms.
+ * Typical figures published by streaming, video-call and gaming services: download/upload in Mbps, ping in ms.
  */
 const ACTIVITIES = [
   { id: "browse", label: "Browsing", good: { down: 5, up: 1 }, min: { down: 1, up: 0.5 } },

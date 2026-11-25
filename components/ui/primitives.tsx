@@ -14,15 +14,6 @@ export function Chip({ tone = "neutral", icon: Icon, className, children }: { to
   );
 }
 
-/** Square icon holder used in lists and feature tiles. */
-export function IconTile({ icon: Icon, className, iconClassName }: { icon: LucideIcon; className?: string; iconClassName?: string }) {
-  return (
-    <span className={cn("grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-primary", className)}>
-      <Icon className={cn("size-4", iconClassName)} aria-hidden="true" />
-    </span>
-  );
-}
-
 /** Left-aligned section intro: eyebrow, title and an optional note on the right. */
 export function SectionIntro({ id, eyebrow, title, aside }: { id: string; eyebrow: string; title: string; aside?: React.ReactNode }) {
   return (
