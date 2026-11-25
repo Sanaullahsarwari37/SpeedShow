@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Loader2, LocateFixed, Search, X } from "lucide-react";
 
-import { useGeocode } from "@/hooks/use-queries";
+import { useGeocode, type LatLon } from "@/hooks/use-queries";
 import type { GeoPlace } from "@/lib/types";
 import { cn, flagEmoji, joinParts } from "@/lib/utils";
 import { SKY_CONTROL } from "@/components/weather/styles";
@@ -12,16 +12,18 @@ interface Props {
   onSelect: (p: GeoPlace | null) => void;
   /** True when a searched place (not the detected location) is showing. */
   custom: boolean;
+  /** The visitor's own location: nearby matches rank first. */
+  near?: LatLon | null;
   className?: string;
 }
 
 /** Accessible place search (WAI-ARIA combobox + listbox). */
-export function PlaceSearch({ onSelect, custom, className }: Props) {
+export function PlaceSearch({ onSelect, custom, near, className }: Props) {
   const [q, setQ] = React.useState("");
   const [open, setOpen] = React.useState(false);
   const [active, setActive] = React.useState(0);
   const listId = React.useId();
-  const { data, isFetching, isError, debounced } = useGeocode(q);
+  const { data, isFetching, isError, debounced } = useGeocode(q, near);
   const results = data ?? [];
   const showList = open && q.trim().length >= 2 && debounced.length >= 2;
 
@@ -56,7 +58,7 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
         <input
           type="search"
           role="combobox"
-          aria-label="Search any city or town for its weather and local time"
+          aria-label="Search any country, province, district, city or village for its weather and local time"
           aria-expanded={showList}
           aria-controls={listId}
           aria-autocomplete="list"
@@ -65,7 +67,7 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
           spellCheck={false}
           enterKeyHint="search"
           maxLength={80}
-          placeholder="Search a city"
+          placeholder="Search a city, district or country"
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -98,7 +100,7 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
             id={listId}
             role="listbox"
             aria-label="Matching places"
-            className="absolute inset-x-0 top-12 z-30 max-h-80 overflow-auto rounded-2xl border border-border bg-surface p-1.5 text-foreground shadow-2xl"
+            className="absolute inset-x-0 top-12 z-30 max-h-[22rem] overflow-auto rounded-2xl border border-border bg-surface p-1.5 text-foreground shadow-2xl"
           >
             {results.map((r, i) => (
               <li
@@ -112,10 +114,11 @@ export function PlaceSearch({ onSelect, custom, className }: Props) {
                 className={cn("flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm", i === active && "bg-accent")}
               >
                 <span aria-hidden="true">{flagEmoji(r.countryCode)}</span>
-                <span className="min-w-0 flex-1 truncate">
-                  <span className="font-medium">{r.name}</span>
-                  <span className="text-muted-foreground"> {joinParts([r.admin1, r.country])}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{r.name}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{joinParts([r.admin1, r.country]) || " "}</span>
                 </span>
+                {r.kind ? <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[0.65rem] font-medium text-muted-foreground">{r.kind}</span> : null}
               </li>
             ))}
             {!isFetching && results.length === 0 ? (

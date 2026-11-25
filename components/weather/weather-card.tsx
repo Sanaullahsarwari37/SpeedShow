@@ -15,6 +15,7 @@ import { useSunState } from "@/components/weather/use-sun";
 import { WeatherBodySkeleton } from "@/components/weather/weather-skeleton";
 import { WeatherIcon } from "@/components/weather/weather-icon";
 import { cToF, formatClock, isoMinutes, kmhToMph } from "@/lib/format";
+import type { LatLon } from "@/hooks/use-queries";
 import type { GeoPlace, WeatherData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { describeWeather, precipOutlook, skyColors } from "@/lib/weather";
@@ -31,6 +32,8 @@ interface Props {
   hasLocation: boolean;
   custom: boolean;
   onSelectPlace: (p: GeoPlace | null) => void;
+  /** The visitor's detected location, to rank nearby search results first. */
+  near?: LatLon | null;
   onRetry: () => void;
   units: Units;
   onUnits: (u: Units) => void;
@@ -71,7 +74,7 @@ function dayTitle(iso: string | undefined) {
 }
 
 /** Weather + live local time for the detected or searched place, on a sky that matches the real time of day. */
-export default function WeatherCard({ data, isLoading, isError, isFetching, placeLabel, hasLocation, custom, onSelectPlace, onRetry, units, onUnits: setUnits }: Props) {
+export default function WeatherCard({ data, isLoading, isError, isFetching, placeLabel, hasLocation, custom, onSelectPlace, near, onRetry, units, onUnits: setUnits }: Props) {
   const s = useSunState(data);
 
   const fmt = React.useMemo<UnitFormat>(
@@ -126,7 +129,7 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
           </h2>
         </div>
         <div className="flex items-center gap-2 lg:w-[28rem]">
-          <PlaceSearch onSelect={onSelectPlace} custom={custom} className="min-w-0 flex-1" />
+          <PlaceSearch onSelect={onSelectPlace} custom={custom} near={near} className="min-w-0 flex-1" />
           <div role="group" aria-label="Temperature unit" className="flex rounded-full border border-border bg-muted p-0.5 text-xs font-semibold">
             {(["c", "f"] as const).map((u) => (
               <button
@@ -216,14 +219,15 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
             </p>
           ) : null}
           <p className="mt-4 px-1 text-[0.7rem] text-muted-foreground">
-            Conditions as of {formatClock(isoMinutes(c.time))} local time · Weather, air quality &amp; place search by{" "}
+            Conditions as of {formatClock(isoMinutes(c.time))} local time · Weather &amp; air quality by{" "}
             <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
               Open-Meteo.com
             </a>{" "}
-            (open data, CC BY 4.0) ·{" "}
-            <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
-              GeoNames
-            </a>
+            (CC BY 4.0) · Place search by Photon, map data ©{" "}
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
+              OpenStreetMap
+            </a>{" "}
+            contributors
           </p>
         </>
       )}

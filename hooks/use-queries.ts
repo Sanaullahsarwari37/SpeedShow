@@ -38,18 +38,25 @@ export function useWeather(lat: number | null | undefined, lon: number | null | 
   });
 }
 
-/** Debounced place search. Keeps the previous list visible while typing. */
-export function useGeocode(query: string) {
+export interface LatLon {
+  lat: number;
+  lon: number;
+}
+
+/** Debounced place search. Keeps the previous list visible while typing; `near` ranks nearby places first. */
+export function useGeocode(query: string, near?: LatLon | null) {
   const [debounced, setDebounced] = useState(query.trim());
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query.trim()), 250);
     return () => clearTimeout(t);
   }, [query]);
 
+  // ~10 km is plenty for ranking and keeps the cache key stable.
+  const bias = near ? `&lat=${near.lat.toFixed(1)}&lon=${near.lon.toFixed(1)}` : "";
   const result = useQuery({
-    queryKey: ["geocode", debounced.toLowerCase()],
+    queryKey: ["geocode", debounced.toLowerCase(), bias],
     queryFn: async ({ signal }) =>
-      (await fetchJson<{ results: GeoPlace[] }>(`/api/geocode?q=${encodeURIComponent(debounced)}`, signal)).results,
+      (await fetchJson<{ results: GeoPlace[] }>(`/api/geocode?q=${encodeURIComponent(debounced)}${bias}`, signal)).results,
     enabled: debounced.length >= 2,
     staleTime: 60 * MIN,
     placeholderData: keepPreviousData,

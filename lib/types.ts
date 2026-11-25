@@ -35,6 +35,8 @@ export interface GeoPlace {
   latitude: number;
   longitude: number;
   timezone: string | null;
+  /** What the place is: "Country", "Province / state", "District", "City", "Town", "Village"… */
+  kind?: string | null;
 }
 
 export interface WeatherCurrent {

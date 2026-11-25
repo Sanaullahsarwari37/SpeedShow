@@ -22,7 +22,7 @@ const COLUMNS = [
     links: [
       { label: "Cloudflare speed test", href: "https://speed.cloudflare.com/", external: true },
       { label: "Open-Meteo weather", href: "https://open-meteo.com/", external: true },
-      { label: "GeoNames places", href: "https://www.geonames.org/", external: true },
+      { label: "OpenStreetMap places", href: "https://www.openstreetmap.org/copyright", external: true },
     ],
   },
   {

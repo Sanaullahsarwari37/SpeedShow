@@ -98,6 +98,9 @@ export function SpeedTest() {
   const lon = place ? place.longitude : network.data?.longitude;
   const hasLocation = lat != null && lon != null;
   const weather = useWeather(lat, lon);
+  const homeLat = network.data?.latitude;
+  const homeLon = network.data?.longitude;
+  const near = React.useMemo(() => (homeLat != null && homeLon != null ? { lat: homeLat, lon: homeLon } : null), [homeLat, homeLon]);
 
   const { state, start, stop } = useSpeedTest({
     getMeta: () => ({ ip: network.data?.ip, isp: network.data?.isp ?? undefined }),
@@ -259,6 +262,7 @@ export function SpeedTest() {
         hasLocation={hasLocation}
         custom={place !== null}
         onSelectPlace={setPlace}
+        near={near}
         onRetry={retryWeather}
         units={units}
         onUnits={setUnits}

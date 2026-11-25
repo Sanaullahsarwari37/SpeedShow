@@ -9,6 +9,100 @@ export function cleanQuery(q: string | null): string | null {
   return s.length >= 2 && s.length <= 80 ? s : null;
 }
 
+/* ------------------------------------------------------------------ */
+/* Photon (OpenStreetMap): countries, provinces, districts, towns     */
+/* ------------------------------------------------------------------ */
+
+/** Only administrative areas and settlements: no shops, roads or rivers. */
+const PHOTON_LAYERS = ["country", "state", "county", "city", "district", "locality"];
+
+/**
+ * Photon search-as-you-type over OpenStreetMap (photon.komoot.io, free, no key).
+ * Understands "district, province, country" queries; `near` ranks nearby places first.
+ */
+export function buildPhotonUrl(q: string, near?: { lat: number; lon: number } | null, lang = "en"): string {
+  const u = new URL("https://photon.komoot.io/api/");
+  u.searchParams.set("q", q);
+  u.searchParams.set("limit", "15");
+  u.searchParams.set("lang", lang);
+  for (const l of PHOTON_LAYERS) u.searchParams.append("layer", l);
+  if (near) {
+    u.searchParams.set("lat", String(near.lat));
+    u.searchParams.set("lon", String(near.lon));
+  }
+  return u.toString();
+}
+
+const KIND_BY_VALUE: Record<string, string> = {
+  city: "City",
+  town: "Town",
+  village: "Village",
+  hamlet: "Village",
+  municipality: "Municipality",
+  administrative: "Municipality",
+  suburb: "Area",
+  quarter: "Area",
+  neighbourhood: "Area",
+  borough: "Area",
+  island: "Island",
+};
+
+function photonKind(type: string, value: string): string {
+  if (type === "country") return "Country";
+  if (type === "state") return "Province / state";
+  if (type === "county") return "District";
+  return KIND_BY_VALUE[value] ?? (type === "city" ? "City" : "Place");
+}
+
+/** Normalise Photon GeoJSON features into places. */
+export function parsePhoton(d: unknown): GeoPlace[] {
+  const features = (d as Json | null)?.features;
+  if (!Array.isArray(features)) return [];
+  const out: GeoPlace[] = [];
+  const seen = new Set<string>();
+
+  for (const f of features as Json[]) {
+    const p = (f.properties ?? {}) as Json;
+    const coords = (f.geometry as Json | undefined)?.coordinates;
+    const name = str(p.name);
+    if (!name || !Array.isArray(coords)) continue;
+    const [lon, lat] = coords as unknown[];
+    if (typeof lat !== "number" || typeof lon !== "number" || Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;
+    if (p.osm_key !== "place" && p.osm_key !== "boundary") continue;
+
+    const type = str(p.type) ?? "";
+    const state = str(p.state);
+    const county = str(p.county);
+    const city = str(p.city);
+    // Parent areas, smallest first, never repeating the place's own name.
+    const parents = (type === "country" ? [] : type === "state" ? [] : type === "county" ? [state] : [type === "city" ? county : (city ?? county), state])
+      .filter((x): x is string => !!x && x !== name);
+    const admin = [...new Set(parents)].join(", ") || null;
+    const countryCode = str(p.countrycode)?.toUpperCase() ?? null;
+
+    const key = `${name}|${admin ?? ""}|${countryCode ?? ""}|${type}`.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    out.push({
+      id: `osm:${str(p.osm_type) ?? ""}${String(p.osm_id ?? `${lat},${lon}`)}`,
+      name,
+      admin1: admin,
+      country: type === "country" ? null : str(p.country),
+      countryCode,
+      latitude: Math.round(lat * 10000) / 10000,
+      longitude: Math.round(lon * 10000) / 10000,
+      timezone: null,
+      kind: photonKind(type, str(p.osm_value) ?? ""),
+    });
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Open-Meteo (GeoNames): fallback when Photon is unavailable          */
+/* ------------------------------------------------------------------ */
+
 /**
  * Open-Meteo geocoding — up to 40 results so districts, towns and
  * places in every country (including Afghanistan) surface in search.

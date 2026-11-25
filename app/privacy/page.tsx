@@ -28,7 +28,7 @@ const SECTIONS = [
   },
   {
     h: "Weather and place search",
-    p: "We send rounded coordinates (about 1 km precision) or the place name you type to Open-Meteo. Nothing that identifies you is attached.",
+    p: "For weather we send rounded coordinates (about 1 km precision) to Open-Meteo. The place name you type goes to Photon (OpenStreetMap search) with your approximate area (about 10 km) so nearby places rank first, and to Open-Meteo if Photon is unavailable. Requests come from our server, so your IP address is not shared and nothing that identifies you is attached.",
   },
   {
     h: "What stays on your device",
