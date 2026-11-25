@@ -5,7 +5,6 @@ import { MoonGlyph } from "@/components/weather/sky";
 import type { SunState } from "@/components/weather/use-sun";
 import { useSvgId } from "@/hooks/use-ui";
 import { formatClock, formatMinutes } from "@/lib/format";
-import { uvLevel } from "@/lib/weather";
 
 /* ------------------------------------------------------------------ */
 /* 24-hour sun path                                                    */
@@ -112,12 +111,11 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
   );
 }
 
-const days = (d: number) => (d < 1 ? "tonight" : `in ${Math.round(d)} day${Math.round(d) === 1 ? "" : "s"}`);
+const hrs = (h: number) => `${h < 10 ? h.toFixed(1).replace(/\.0$/, "") : Math.round(h)} h`;
 
 export function SunMoon({ s }: { s: SunState }) {
   const change = s.daylightChange;
-  const uv = s.today?.uvMax ?? null;
-  const noon = s.rise != null && s.set != null ? (s.rise + s.set) / 2 : null;
+  const sunshine = s.today?.sunshineH ?? null;
 
   return (
     <Surface as="div" className="h-full">
@@ -137,9 +135,19 @@ export function SunMoon({ s }: { s: SunState }) {
           value={s.daylight != null ? formatMinutes(s.daylight) : "—"}
           note={change != null && Math.round(change) !== 0 ? `${change > 0 ? "+" : "−"}${formatMinutes(Math.abs(change))} tomorrow` : change != null ? "Same tomorrow" : undefined}
         />
-        <Stat label="Solar noon" value={formatClock(noon)} note="Sun at its highest" />
-        <Stat label="Golden hour" value={s.set != null ? formatClock(s.set - 60) : "—"} note="Soft light until sunset" />
-        <Stat label="UV peak" value={uv != null ? String(Math.round(uv)) : "—"} note={uv != null ? uvLevel(uv) : undefined} />
+        <Stat
+          label="Sunshine"
+          value={sunshine != null ? hrs(sunshine) : "—"}
+          note={sunshine != null && s.daylight ? `${Math.round(((sunshine * 60) / s.daylight) * 100)}% of daylight` : undefined}
+        />
+        <Stat label="Solar noon" value={formatClock(s.noon)} note={`Sun peaks at ${Math.max(0, Math.round(s.peak))}°`} />
+        <Stat
+          label="Golden hour"
+          value={s.golden ? formatClock(s.golden.down) : s.peak > 0 ? "All day" : "—"}
+          note={s.golden ? `Until sunset · morning till ${formatClock(s.golden.up)}` : s.peak > 0 ? "Sun stays below 6°" : undefined}
+        />
+        <Stat label="First light" value={s.civil ? formatClock(s.civil.up) : "—"} note="Civil dawn" />
+        <Stat label="Dark" value={s.civil ? formatClock(s.civil.down) : "—"} note="Civil dusk" />
       </dl>
 
       <div className="flex items-center gap-4 px-4 py-4 sm:px-5">
@@ -153,11 +161,11 @@ export function SunMoon({ s }: { s: SunState }) {
         <dl className="shrink-0 text-right text-xs text-muted-foreground">
           <div>
             <dt className="inline">Full moon </dt>
-            <dd className="inline font-medium text-foreground">{days(s.moon.toFull)}</dd>
+            <dd className="inline font-medium text-foreground">{s.when(s.moon.nextFull)}</dd>
           </div>
           <div className="mt-1">
             <dt className="inline">New moon </dt>
-            <dd className="inline font-medium text-foreground">{days(s.moon.toNew)}</dd>
+            <dd className="inline font-medium text-foreground">{s.when(s.moon.nextNew)}</dd>
           </div>
         </dl>
       </div>

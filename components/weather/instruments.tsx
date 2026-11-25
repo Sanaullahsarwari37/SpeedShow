@@ -59,7 +59,11 @@ function Instrument({ dial, label, value, note }: { dial: React.ReactNode; label
 /** The eight current-conditions dials. */
 export function Instruments({ data, sun, t, wind }: { data: WeatherData; sun: SunState; t: (c: number) => string; wind: (k: number) => string }) {
   const c = data.current;
-  const rain = sun.today?.precipProb ?? 0;
+  // Rain over the coming 12 hours: still useful late in the day, unlike a whole-day figure.
+  const next = data.hourly.slice(0, 12);
+  const rain = Math.max(0, ...next.map((h) => h.precipProb));
+  const rainMm = next.reduce((t, h) => t + h.precip, 0);
+  const uvPeak = sun.today?.uvMax ?? null;
   const items = [
     { label: "Humidity", dial: <Ring value={c.humidity} icon={Droplets} iconClass="text-sky-500 dark:text-sky-200" />, value: `${Math.round(c.humidity)}%`, note: c.dewPoint != null ? `Dew point ${t(c.dewPoint)}` : undefined },
     {
@@ -74,16 +78,16 @@ export function Instruments({ data, sun, t, wind }: { data: WeatherData; sun: Su
       note: `From ${windDirection(c.windDir)}${c.gustKmh ? ` · gusts ${wind(c.gustKmh)}` : ""}`,
     },
     {
-      label: "Rain today",
+      label: "Rain, next 12 h",
       dial: <Ring value={rain} icon={Umbrella} iconClass="text-sky-500 dark:text-sky-200" />,
       value: `${Math.round(rain)}%`,
-      note: sun.today && sun.today.precipSum > 0 ? `${sun.today.precipSum.toFixed(1)} mm expected` : "No rain expected",
+      note: rainMm >= 0.1 ? `${rainMm.toFixed(1)} mm expected` : rain >= 20 ? "Only light showers" : "No rain expected",
     },
     {
       label: "UV index",
       dial: <Ring value={c.uv ?? 0} max={11} color={scaleColor(c.uv ?? 0, UV_STOPS)} icon={Sun} iconClass="text-amber-500 dark:text-amber-200" />,
       value: c.uv != null ? Math.round(c.uv) : "—",
-      note: c.uv != null ? uvLevel(c.uv) : undefined,
+      note: c.uv != null ? `${uvLevel(c.uv)}${uvPeak != null && uvPeak > c.uv + 0.5 ? ` · peak ${Math.round(uvPeak)}` : ""}` : undefined,
     },
     {
       label: "Air quality",

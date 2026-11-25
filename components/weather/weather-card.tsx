@@ -209,8 +209,14 @@ export default function WeatherCard({ data, isLoading, isError, isFetching, plac
             </div>
           </div>
 
+          {data.stale ? (
+            <p role="status" className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs text-amber-700 dark:text-amber-200">
+              <RefreshCw className="size-3.5" aria-hidden="true" />
+              The weather service is briefly unreachable, so this is the last forecast received. It refreshes automatically.
+            </p>
+          ) : null}
           <p className="mt-4 px-1 text-[0.7rem] text-muted-foreground">
-            Updated {formatClock(isoMinutes(c.time))} local time · Weather, air quality &amp; place search by{" "}
+            Conditions as of {formatClock(isoMinutes(c.time))} local time · Weather, air quality &amp; place search by{" "}
             <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-foreground">
               Open-Meteo.com
             </a>{" "}

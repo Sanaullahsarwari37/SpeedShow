@@ -77,6 +77,27 @@ export const aqiLevel = (aqi: number) =>
     [Infinity, "Hazardous"],
   ]);
 
+/** Temperature (°C) → colour on a fixed scale, so a bar shows how cold or warm a day really is. */
+const TEMP_SCALE: [number, string][] = [
+  [-20, "#a5b4fc"],
+  [-5, "#60a5fa"],
+  [5, "#38bdf8"],
+  [12, "#34d399"],
+  [20, "#facc15"],
+  [28, "#fb923c"],
+  [36, "#ef4444"],
+];
+export function tempColor(c: number): string {
+  const i = TEMP_SCALE.findIndex(([t]) => c <= t);
+  return TEMP_SCALE[i === -1 ? TEMP_SCALE.length - 1 : Math.max(0, i)][1];
+}
+/** CSS gradient for a min → max temperature bar, passing through each scale colour in between. */
+export function tempGradient(min: number, max: number): string {
+  const stops = [min, ...TEMP_SCALE.map(([t]) => t).filter((t) => t > min && t < max), max];
+  const span = Math.max(0.1, max - min);
+  return `linear-gradient(90deg, ${stops.map((t) => `${tempColor(t)} ${(((t - min) / span) * 100).toFixed(0)}%`).join(", ")})`;
+}
+
 export const visibilityLabel = (m: number) => (m >= 10000 ? `${Math.round(m / 1000)} km` : m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`);
 
 /* ------------------------------------------------------------------ */
@@ -114,37 +135,6 @@ export function precipOutlook(hours: WeatherHour[], clock: (iso: string, withMin
   const maybe = next.findIndex((h) => h.precipProb >= 25);
   if (maybe > 0) return `Slight chance of rain around ${clock(next[maybe].time)}`;
   return "No rain expected in the next 12 hours";
-}
-
-/* ------------------------------------------------------------------ */
-/* Moon                                                                */
-/* ------------------------------------------------------------------ */
-
-const SYNODIC = 29.530588853;
-const KNOWN_NEW_MOON = Date.UTC(2000, 0, 6, 18, 14);
-const MOON_NAMES = [
-  "New moon",
-  "Waxing crescent",
-  "First quarter",
-  "Waxing gibbous",
-  "Full moon",
-  "Waning gibbous",
-  "Last quarter",
-  "Waning crescent",
-];
-
-/** Moon phase for a moment: fraction 0..1 (0 = new, 0.5 = full), name and lit share. */
-export function moonPhase(at: number) {
-  const age = ((((at - KNOWN_NEW_MOON) / 86_400_000) % SYNODIC) + SYNODIC) % SYNODIC;
-  const fraction = age / SYNODIC;
-  return {
-    fraction,
-    name: MOON_NAMES[Math.floor(fraction * 8 + 0.5) % 8],
-    illumination: (1 - Math.cos(2 * Math.PI * fraction)) / 2,
-    /** Days until the next full / new moon. */
-    toFull: ((0.5 - fraction + 1) % 1) * SYNODIC,
-    toNew: ((1 - fraction) % 1) * SYNODIC,
-  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -194,6 +184,8 @@ const s = (v: unknown): string => (typeof v === "string" ? v : "");
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 /** Round to `d` decimals: keeps the JSON payload small (nobody needs 7.0999999 °C). */
 const rd = (v: number, d = 1) => Math.round(v * 10 ** d) / 10 ** d;
+/** Seconds → hours (1 decimal), or null. */
+const hours = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? rd(v / 3600) : null);
 
 /** Validate a lat/lon query param, rounded to ~1 km (better cache hits, more privacy). */
 export function parseCoordinate(value: string | null, min: number, max: number): number | null {
@@ -212,11 +204,12 @@ export function buildForecastUrl(lat: number, lon: number, apiKey?: string): str
     latitude: String(lat),
     longitude: String(lon),
     current:
-      "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m",
+      // Current values come from the 15-minute model step, not the top of the hour.
+      "temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,dew_point_2m,uv_index,visibility",
     hourly:
-      "temperature_2m,precipitation_probability,precipitation,weather_code,is_day,uv_index,visibility,dew_point_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m",
+      "temperature_2m,precipitation_probability,precipitation,weather_code,is_day,wind_speed_10m,wind_direction_10m,relative_humidity_2m",
     daily:
-      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,sunrise,sunset,wind_speed_10m_max,wind_direction_10m_dominant",
+      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,sunrise,sunset,wind_speed_10m_max,wind_direction_10m_dominant,wind_gusts_10m_max,sunshine_duration,precipitation_hours",
     minutely_15: "precipitation,weather_code",
     forecast_minutely_15: "8",
     timezone: "auto",
@@ -274,8 +267,8 @@ export function normalizeWeather(raw: unknown, lat: number, lon: number, air: Ai
     .map((t, i) => ({
       date: s(t),
       code: n(dcol("weather_code")[i]),
-      max: n(dcol("temperature_2m_max")[i]),
-      min: n(dcol("temperature_2m_min")[i]),
+      max: rd(n(dcol("temperature_2m_max")[i])),
+      min: rd(n(dcol("temperature_2m_min")[i])),
       precipProb: n(dcol("precipitation_probability_max")[i]),
       precipSum: n(dcol("precipitation_sum")[i]),
       uvMax: nOrNull(dcol("uv_index_max")[i]),
@@ -283,6 +276,9 @@ export function normalizeWeather(raw: unknown, lat: number, lon: number, air: Ai
       sunset: s(dcol("sunset")[i]) || null,
       windMax: nOrNull(dcol("wind_speed_10m_max")[i]),
       windDir: nOrNull(dcol("wind_direction_10m_dominant")[i]),
+      gustMax: nOrNull(dcol("wind_gusts_10m_max")[i]),
+      sunshineH: hours(dcol("sunshine_duration")[i]),
+      precipHours: nOrNull(dcol("precipitation_hours")[i]),
     }));
 
   const m = (r.minutely_15 ?? {}) as Json;
@@ -303,17 +299,17 @@ export function normalizeWeather(raw: unknown, lat: number, lon: number, air: Ai
       temp: n(c.temperature_2m),
       feelsLike: n(c.apparent_temperature, n(c.temperature_2m)),
       humidity: n(c.relative_humidity_2m),
-      dewPoint: nOrNull(col("dew_point_2m")[nowIdx]),
+      dewPoint: nOrNull(c.dew_point_2m),
       windKmh: n(c.wind_speed_10m),
-      gustKmh: nOrNull(col("wind_gusts_10m")[nowIdx]),
+      gustKmh: nOrNull(c.wind_gusts_10m),
       windDir: n(c.wind_direction_10m),
       code: n(c.weather_code),
       isDay: n(c.is_day, 1) === 1,
       precip: n(c.precipitation),
       cloudCover: n(c.cloud_cover),
       pressure: n(c.pressure_msl),
-      uv: nOrNull(col("uv_index")[nowIdx]),
-      visibilityM: nOrNull(col("visibility")[nowIdx]),
+      uv: nOrNull(c.uv_index),
+      visibilityM: nOrNull(c.visibility),
       time: s(c.time),
     },
     hourly,

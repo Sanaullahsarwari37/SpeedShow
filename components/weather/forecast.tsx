@@ -9,6 +9,7 @@ import { useSvgId } from "@/hooks/use-ui";
 import { formatClock, isoMinutes, windDirection } from "@/lib/format";
 import { areaPath, smoothPath, type Point } from "@/lib/svg";
 import type { WeatherDay, WeatherHour } from "@/lib/types";
+import { tempGradient } from "@/lib/weather";
 import { cn, cssVars } from "@/lib/utils";
 
 export interface UnitFormat {
@@ -245,7 +246,7 @@ export function DailyForecast({
             <button
               type="button"
               aria-pressed={selected === i}
-              aria-label={`${dayName(d.date, i)}${d.label ? `, ${d.label}` : ""}: low ${units.t(d.min)}, high ${units.t(d.max)}, ${Math.round(d.precipProb)}% chance of rain. Show hourly forecast.`}
+              aria-label={`${dayName(d.date, i)}${d.label ? `, ${d.label}` : ""}: low ${units.t(d.min)}, high ${units.t(d.max)}, ${Math.round(d.precipProb)}% chance of rain${d.gustMax != null && d.gustMax >= 50 ? `, gusts up to ${Math.round(units.windValue(d.gustMax))} ${units.windUnit}` : ""}. Show hourly forecast.`}
               onClick={() => onSelect(i)}
               className={cn(
                 "grid w-full grid-cols-[3rem_1.5rem_2.75rem_2.1rem_1fr_2.1rem] items-center gap-2 rounded-xl px-2 py-2 text-left text-sm transition-colors sm:gap-2.5",
@@ -261,8 +262,8 @@ export function DailyForecast({
               <span className="text-right text-muted-foreground tabular-nums">{units.t(d.min)}</span>
               <span className="relative h-1.5 rounded-full bg-foreground/[0.08]" aria-hidden="true">
                 <span
-                  className="grow-x absolute inset-y-0 rounded-full bg-gradient-to-r from-sky-300 via-emerald-200 to-amber-300"
-                  style={cssVars({ left: `${pos(d.min)}%`, width: `${Math.max(6, pos(d.max) - pos(d.min))}%`, "--d": `${i * 40}ms` })}
+                  className="grow-x absolute inset-y-0 rounded-full"
+                  style={cssVars({ left: `${pos(d.min)}%`, width: `${Math.max(6, pos(d.max) - pos(d.min))}%`, background: tempGradient(d.min, d.max), "--d": `${i * 40}ms` })}
                 />
                 {i === 0 ? (
                   <span

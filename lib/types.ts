@@ -83,6 +83,11 @@ export interface WeatherDay {
   sunset: string | null;
   windMax: number | null; // km/h
   windDir: number | null; // dominant, degrees
+  gustMax: number | null; // km/h
+  /** Hours of bright sunshine expected (null when the model has none). */
+  sunshineH: number | null;
+  /** Hours with measurable precipitation. */
+  precipHours: number | null;
 }
 
 export interface AirQuality {
@@ -111,6 +116,8 @@ export interface WeatherData {
   daily: WeatherDay[];
   air: AirQuality | null;
   updatedAt: string;
+  /** True when the live source failed and this is the last good forecast. */
+  stale?: boolean;
 }
 
 export interface SpeedMetrics {

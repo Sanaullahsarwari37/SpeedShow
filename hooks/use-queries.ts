@@ -32,7 +32,9 @@ export function useWeather(lat: number | null | undefined, lon: number | null | 
     enabled: typeof lat === "number" && typeof lon === "number",
     staleTime: 10 * MIN,
     refetchInterval: 15 * MIN,
-    retry: 1,
+    // Two retries with backoff ride out a flaky connection; old data stays on screen meanwhile.
+    retry: 2,
+    retryDelay: (n) => Math.min(8000, 1000 * 2 ** n),
   });
 }
 
