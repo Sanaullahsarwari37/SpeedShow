@@ -32,7 +32,7 @@ const SECTIONS = [
   },
   {
     h: "What stays on your device",
-    p: "Only the city you picked for weather and your temperature unit are saved, in your browser's local storage. Test results are not stored at all. Clear these any time in your browser settings.",
+    p: "Only your settings are saved, in your browser's local storage: the place you picked for weather, temperature and speed units, and light or dark theme. Test results are not stored at all. Clear these any time in your browser settings.",
   },
   {
     h: "What we don't do",
